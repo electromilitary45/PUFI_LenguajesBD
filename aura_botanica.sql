@@ -15,7 +15,7 @@ CREATE TABLE Direccion (
     distrito varchar(20) not null,
     codPostal int not null,
     senalesExactas varchar(500) not null,
-    PRIMARY KEY(idDir)
+    PRIMARY KEY(idDireccion)
 );
 
 CREATE TABLE Usuario (
@@ -26,9 +26,9 @@ CREATE TABLE Usuario (
     correo varchar(45) not null,
     contrasenna varchar(45) not null,
     idRol int not null,
-    idDir int not null,
+    idDireccion int not null,
     FOREIGN KEY(idRol) REFERENCES Rol(idRol),
-    FOREIGN KEY(idDir) REFERENCES Direccion(idDir),
+    FOREIGN KEY(idDireccion) REFERENCES Direccion(idDireccion),
     PRIMARY KEY(idUsuario)
 );
 
@@ -41,11 +41,11 @@ CREATE TABLE TipoServicio (
 
 CREATE TABLE Servicio (
     idServicio int not null,
-    nombre varchar(45) not null,
-    img varchar(200) not null,
-    descripcion varchar(45) not null,
+    nombre varchar2(45) not null,
+    img varchar2(200) not null,
+    descripcion varchar2 (45) not null,
     cupos int not null,
-    estatus boolean not null,
+    estatus number(1) not null,
     fecha date not null,
     idTipoServicio int not null,
     FOREIGN KEY(idTipoServicio) REFERENCES TipoServicio(idTipoServicio),
@@ -73,7 +73,7 @@ CREATE TABLE Producto (
     nombre varchar(45) not null,
     descripcion varchar(200) not null,
     stock int not null,
-    estatus boolean not null,
+    estatus number(1) not null,
     precio float not null,
     idTipoProducto int not null,
     FOREIGN KEY(idTipoProducto) REFERENCES TipoProducto(idTipoProducto),
@@ -82,7 +82,7 @@ CREATE TABLE Producto (
 
 CREATE TABLE Resenna (
     idResenna int not null,
-    estatus boolean not null,
+    estatus number(1) not null,
     descripcion varchar(255) not null,
     idProducto int not null,
     idUsuario int not null,
