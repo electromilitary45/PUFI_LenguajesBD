@@ -1,5 +1,7 @@
 import cx_Oracle
-cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
+
+##RUTA DEREK
+##cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
 
 ##------------------ MODULOS USUARIOS------------------##
 def InsertUsuario():
