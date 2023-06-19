@@ -44,8 +44,8 @@ CREATE TABLE TipoServicio (
 CREATE TABLE Servicio (
     idServicio int not null identity(1,1),
     nombre varchar2(45) not null,
-    img varchar2(200) not null,
-    descripcion varchar2 (45) not null,
+    img varchar(200) not null,
+    descripcion varchar (45) not null,
     cupos int not null,
     estatus number(1) not null,
     fecha date not null,
