@@ -10,10 +10,11 @@ def InsertUsuario():
     apellido2=input("Ingrese su Segundo Apellido: ")
     cedula=input("Ingrese su cédula: ")
     correo=input("Ingrese su correo: ")
-    contrasena=input("Ingrese su contraseña: ")
-    idRol=input("Ingrese su rol: ")
-    idDireccion=1
-
+    contrasenna=input("Ingrese su contraseña: ")
+    idRol=""
+    while (idRol!="1" and idRol!="2"):
+        idRol=input("Ingrese su rol: \n1. Administrador\n2. Cliente \n")
+    idDireccion=0
 
     try:
         connection=cx_Oracle.connect(
@@ -22,14 +23,18 @@ def InsertUsuario():
             dsn='localhost:1521/orcl',
             encoding='UTF-8'
         )
-
+        ##coneccion 
         cursor=connection.cursor()
-        cursor.execute("INSERT INTO usuario (idUsuario,nombre,primapellido,segapellido,) VALUES('"+nombre+"', '"+apellido1+"', '")
+        ## sentencia de insercion de usuario
+        cursor.execute("INSERT INTO usuario (nombre,primapellido,segapellido,cedula,correo,contrasenna,idRol,idDireccion) VALUES('"+nombre+"', '"+apellido1+"', '"+apellido2+"', '"+cedula+"', '"+correo+"', '"+contrasenna+"', '"+str(idRol)+"', '"+str(idDireccion)+"')")
+        cursor.execute("commit")
+        print("Usuario creado con éxito")
     except Exception as ex:
         print(ex)
     finally:
         if connection:
             connection.close()
+            
 
 def VerUsuarios():
     try:
