@@ -34,7 +34,6 @@ def InsertUsuario():
     finally:
         if connection:
             connection.close()
-            
 
 def VerUsuarios():
     try:
@@ -55,6 +54,9 @@ def VerUsuarios():
 
         for row in results:
             print(row)
+        
+
+        
 
     except Exception as ex:
         print(ex)
