@@ -127,4 +127,163 @@ DROP TABLE producto CASCADE CONSTRAINTS;
 DROP TABLE resenna CASCADE CONSTRAINTS;
 DROP TABLE compra CASCADE CONSTRAINTS;
 DROP TABLE compraProducto CASCADE CONSTRAINTS;
-```
+--
+
+--Creación de procedimientos de inserciones
+
+--Debe Crear un procedimiento que reciba como parametros:
+--[ ] Nombre
+--Y debe verificar que no exsista otro rol con ese mismo nombre, en caso de que no haya se crea
+CREATE OR REPLACE PROCEDURE SP_CrearRol
+
+(
+    p_nombre IN VARCHAR2
+) AS
+BEGIN
+        --Valida rol null o vacío
+        IF p_nombre IS NULL OR p_nombre = '' THEN
+            DBMS_OUTPUT.PUT_LINE('Error: El nombre del rol es nulo o vacío.');
+            RETURN;
+        END IF;
+
+        --Verifica rol existente
+        DECLARE
+                cuenta NUMBER;
+        BEGIN
+        
+        SELECT COUNT(*) INTO cuenta FROM Rol WHERE nombre = p_nombre;
+        
+        IF cuenta > 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Error: El rol ya existe.');
+        ELSE
+            INSERT INTO Rol(nombre) VALUES (p_nombre);
+            DBMS_OUTPUT.PUT_LINE('El rol ha sido creado exitosamente.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al crear el rol: ' || SQLERRM);
+    END;
+END;
+
+--Prueba
+BEGIN
+
+    SP_CrearRol('');
+END;
+
+--Debe Crear un procedimiento que reciba como parametros:
+--idRol
+--Nombre
+CREATE OR REPLACE PROCEDURE SP_EditarRol
+(
+    p_idRol IN NUMERIC,
+    p_nombre IN VARCHAR2
+) AS
+BEGIN
+    --Valida ID nulo
+    IF p_idRol IS NULL THEN
+        DBMS_OUTPUT.PUT_LINE('Error: El ID ingresado es nulo.');
+        RETURN;
+    END IF;
+
+    -- Valida rol null o vacío
+    IF p_nombre IS NULL OR p_nombre = '' THEN
+        DBMS_OUTPUT.PUT_LINE('Error: El nombre del rol es nulo o vacío.');
+        RETURN;
+    END IF;
+
+    -- Verifica existencia del rol
+    DECLARE
+        cuenta NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO cuenta FROM Rol WHERE idRol = p_idRol;
+        
+        IF cuenta = 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Error: El rol no existe.');
+        ELSE
+            -- Actualiza el nombre del rol
+            UPDATE Rol SET nombre = p_nombre WHERE idRol = p_idRol;
+            DBMS_OUTPUT.PUT_LINE('El rol ha sido editado exitosamente.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al editar el rol: ' || SQLERRM);
+    END;
+END;
+
+--prueba
+BEGIN
+    SP_EditarRol(1,'Usuario');
+END;
+
+
+--Debe Crear un procedimiento que reciba como parametros:
+--idRol
+--Y realizar un select en usuarios donde se muestren solamente los usuarios que pertenezcan al rol creado.
+--El select debe contener un INNER JOIN para mostrar el nombre del rol
+
+--1er Alternativa / Crea una vista que muestra la info de usuarios junto con su rol, se  utiliza esta vista para filtrarla mediante un SP, el SP espera como parametro el nombre del rol.
+
+--Vista UsuariosxRol
+CREATE OR REPLACE VIEW V_UsuariosConRol AS
+SELECT u.idUsuario "ID Usuario", u.nombre "Nombre", u.primApellido "Primer Apellido", u.segApellido "Segundo Apellido", u.cedula "Cédula", u.correo "Correo", u.contrasenna "Contraseña", r.nombre AS "Rol"
+FROM Usuario u
+INNER JOIN Rol r ON u.idRol = r.idRol;
+
+
+--SP Filtra usuarios x Rol
+CREATE OR REPLACE PROCEDURE SP_FiltrarUsuariosPorRol(
+    p_nombreRol IN VARCHAR2
+) AS
+    cuenta NUMBER;
+    v_rol V_UsuariosConRol%ROWTYPE; -- %ROWTYPE crea una variable con la misma estructura de columnas y topos de datos que la tabla o vista.
+BEGIN
+    -- Verificar si el rol existe
+    SELECT COUNT(*) INTO cuenta FROM Rol WHERE nombre = p_nombreRol;
+    
+    IF cuenta = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('Error: El rol indicado no existe.');
+    ELSE
+        -- Filtrar usuarios por el rol especificado
+        SELECT * INTO v_rol FROM V_UsuariosConRol WHERE "Rol" = p_nombreRol;
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al filtrar los usuarios por rol: ' || SQLERRM);
+END;
+
+  
+DROP PROCEDURE SP_FiltrarUsuariosPorRol
+
+
+--prueba
+BEGIN
+    SP_FiltrarUsuariosPorRol('');
+END;
+
+--2da Alternativa 
+
+CREATE OR REPLACE PROCEDURE SP_UsuariosPorRol(
+    p_idRol IN NUMERIC
+) AS
+BEGIN
+    -- Verificar si el rol existe
+    DECLARE
+        cuenta NUMBER;
+    BEGIN
+END;
+        SELECT COUNT(*) INTO cuenta FROM Rol WHERE idRol = p_idRol;
+
+        IF cuenta = 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Error: El rol indicado no existe.');
+        ELSE
+            -- Filtrar usuarios por el rol especificado y mostrar el nombre del rol
+            SELECT u.idUsuario "ID Usuario", u.nombre "Nombre", u.primApellido "Primer Apellido", u.segApellido "Segundo Apellido", u.cedula "Cédula", u.correo "Correo", u.contrasenna "Contraseña", r.nombre AS "Rol"
+            FROM Usuario u
+            INNER JOIN Rol r ON u.idRol = r.idRol;
+            WHERE u.idRol = p_idRol;
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al obtener los usuarios por rol: ' || SQLERRM);
+    END;
