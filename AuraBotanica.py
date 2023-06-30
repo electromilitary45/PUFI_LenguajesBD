@@ -284,8 +284,25 @@ def InsertUsuario():
     contrasenna=input("Ingrese su contraseña: ")
     # ---- ROL
     idRol=""
-    while (idRol!="1" and idRol!="2"):
-        idRol=input("Ingrese su rol: \n1. Administrador\n2. Cliente \n")
+    encontrado=False
+    while (encontrado==False and idRol==""):
+        usuarios=rolesDatos()
+        
+        u=""
+        for u in usuarios:
+            u=str(u)+"\n"
+        
+        idRol=input("Ingrese su rol: \n"+u+"\n")
+        
+        for i in usuarios:
+            if (str(i[0])==idRol):
+                encontrado=True
+                idRol=i[0]
+                break
+            
+        if (encontrado==False):
+            print("Rol no encontrado/nReintente nuevamente")
+    # ---- DIRECCION
     idDireccion=0
 
     try:
@@ -547,7 +564,112 @@ def VerUsuariosRol(idRol):
             connection.close()
     return usuarios
 
+##----------------- MODULO TIPO PRODUCTO -----------------## 
+
+def insertarTipoProducto():
+    ## ---- NOMBRE TIPO PRODUCTO
+    nombre=""
+    while (nombre==""):
+        nombre=input("Ingrese el nombre del tipo de producto: ")
+    ## --- DESCRIPCION TIPO PRODUCTO
+    desc=""
+    while (desc==""):
+        desc=input("Ingrese la descripcion del tipo de producto: ")
+    
+    try:
+        connection=cx_Oracle.connect(
+            user='DBADEREK',
+            password='Villaley45',
+            dsn='localhost:1521/orcl',
+            encoding='UTF-8'
+        )
+        ##coneccion 
+        cursor=connection.cursor()
+        ## sentencia de insercion de rol
+        cursor.execute("INSERT INTO TipoProducto (nombre,descripcion) VALUES('"+nombre+"','"+desc+"')")
+        
+        # execute de un sp
+        #cursor.callproc("sp_insertar_rol", [nombreRol])
+        
+        ## commit
+        cursor.execute("commit")
+        
+    except Exception as ex:
+        print(ex)
+    finally:
+        if connection:
+            connection.close()
+            print("Tipo de producto "+nombre+" creado con éxito")
+
+def verTipoProducto():
+    print("OPCIÓN EN DESARROLLO")
+
+def editarTipoProducto():
+    print("OPCIÓN EN DESARROLLO")
+
+def verTipoProductoEspecifico():
+    print("OPCIÓN EN DESARROLLO")
+
+def eliminarTipoProducto():
+    print("OPCIÓN EN DESARROLLO")
+
+
 ##------------------ MODULOS PRODUCTOS------------------##
+
+def CrearProducto():
+    # ---- NOMBRE PRODUCTO
+    nombre=""
+    while (nombre==""):
+        nombre=input("Ingrese el nombre del producto: ")
+    # ---- DESCRIPCION
+    descripcion=""
+    while (descripcion==""):
+        descripcion=input("Ingrese la descripcion del producto: ")
+    # ---- PRECIO
+    precio=""
+    while (precio==""):
+        precio=input("Ingrese el precio del producto: ")
+    # ---- STOCK
+    stock=""
+    while (stock==""):
+        stock=input("Ingrese el stock del producto: ")
+    # ---- idTipoProducto
+    idTipoProducto=""
+    while (idTipoProducto==""):
+        idTipoProducto=input("Ingrese el idTipoProducto del producto: ")
+
+def VerProductos():
+    try:
+        connection=cx_Oracle.connect(
+            user='DBADEREK',
+            password='Villaley45',
+            dsn='localhost:1521/orcl',
+            encoding='UTF-8'
+        )
+
+        ##print(connection.version)
+        cursor=connection.cursor()
+
+        cursor.execute("SELECT * FROM TipoUsuario")
+        results = cursor.fetchall()
+
+        print("Número de filas recuperadas:", len(results))
+        for row in results:
+            print(row)
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+
+def EditarProducto():
+    print("OPCIÓN EN DESARROLLO")
+
+def VerProductoEspecifico():
+    print("OPCIÓN EN DESARROLLO")
+
 
 ##------------------ MODULOS PEDIDOS------------------##
 
@@ -598,24 +720,67 @@ def MENUUSUARIOS():
         elif op=="5":
             DesactivarUsuario()
 
-def MENUPRINCIPAL():
+def MENUTIPOPRODUCTO():
+    op=""
+    while op!="0":
+        input(
+            "********** MENU DE TIPO PRODUCTO**********\n"
+            "1. CREAR TIPO PRODUCTO\n"
+            "2. VER TIPO PRODUCTO\n"
+            "3. VER TIPO PRODUCTO ESPECIFICO\n"
+            "4. EDITAR TIPO PRODUCTO\n"
+            "0. SALIR\n"
+            "Ingrese una opción:"
+        )
+        
+        if op=="1":
+            insertarTipoProducto()
+        elif op=="2":
+            verTipoProducto()
+
+def MENUPRODUCTOS():
     op=""
     while op!="0":
         print(
+            "********** MENU DE PRODUCTOS**********\n"
+            "1. CREAR PRODUCTO\n"
+            "2. VER PRODUCTOS\n"
+            "3. VER PRODUCTO ESPECIFICO\n"
+            "4. EDITAR PRODUCTO\n"
+            "0. SALIR\n"
+        )
+        op=input("Ingrese una opción: ")
+        if op=="1":
+            CrearProducto()
+        elif op=="2":
+            VerProductos()
+        elif op=="3":
+            VerProductoEspecifico()
+        elif op=="4":
+            EditarProducto()
+
+def MENUPRINCIPAL():
+    op=""
+    while op!="0":
+        op=input(
             "********** MENU **********\n"
             "1. ROLES\n"
             "2. USUARIOS\n"
-            "3. PRODUCTOS\n"
+            "3. TIPO PRODUCTO\n"
+            "4. PRODUCTOS\n"
             "0. SALIR\n"
+            "Ingrese una opción:"
         )
-
-        op=input("Ingrese una opción: ")
+        
         if op=="1":
             MENUROLES()
         elif op=="2":
             MENUUSUARIOS()
         elif op=="3":
-            print("OPCIÓN EN DESARROLLO")
+            MENUTIPOPRODUCTO()
+        elif op=="4":
+            MENUPRODUCTOS()
+
 
 # -----PROGRAMA PRINCIPAL-----
 MENUPRINCIPAL()
