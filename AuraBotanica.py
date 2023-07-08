@@ -229,6 +229,7 @@ def EliminarRol():
                         connection.close()
                         print("Rol eliminado con éxito")
 
+
 ##------------------ MODULOS USUARIOS------------------##
 
 def EncUsuarioID(idUsuario):
@@ -316,6 +317,12 @@ def InsertUsuario():
         cursor=connection.cursor()
         ## sentencia de insercion de usuario
         cursor.execute("INSERT INTO usuario (nombre,primapellido,segapellido,cedula,correo,contrasenna,idRol,idDireccion) VALUES('"+nombre+"', '"+apellido1+"', '"+apellido2+"', '"+cedula+"', '"+correo+"', '"+contrasenna+"', '"+str(idRol)+"', '"+str(idDireccion)+"')")
+        
+        # execute de sp crear usuario
+        # cursor.callproc("sp_insertar_usuario", [nombre,apellido1,apellido2,cedula,correo,contrasenna,idRol,idDireccion])
+        
+        
+        
         cursor.execute("commit")
         print("Usuario creado con éxito")
     except Exception as ex:
