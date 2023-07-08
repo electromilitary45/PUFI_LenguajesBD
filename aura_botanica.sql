@@ -129,8 +129,11 @@ DROP TABLE compra CASCADE CONSTRAINTS;
 DROP TABLE compraProducto CASCADE CONSTRAINTS;
 --
 
---Creación de procedimientos de inserciones
+--Creación de procedimientos 
 
+--MODULO ROL--
+
+--1
 --Debe Crear un procedimiento que reciba como parametros:
 --[ ] Nombre
 --Y debe verificar que no exsista otro rol con ese mismo nombre, en caso de que no haya se crea
@@ -171,6 +174,7 @@ BEGIN
     SP_CrearRol('');
 END;
 
+--2
 --Debe Crear un procedimiento que reciba como parametros:
 --idRol
 --Nombre
@@ -217,6 +221,56 @@ BEGIN
 END;
 
 
+--(ROL) Sp_LeerRol#3
+
+CREATE OR REPLACE PROCEDURE SP_LeerRol(
+    p_idRol IN NUMBER
+) AS
+    v_cuenta NUMBER;
+    v_nombre ROL.NOMBRE%TYPE;
+BEGIN
+    -- Verificar si el ID del rol existe
+    SELECT COUNT(*) INTO v_cuenta
+    FROM ROL
+    WHERE IDROL = p_idRol;
+    
+    IF v_cuenta = 0 THEN
+        -- El ID del rol no existe, mostrar un mensaje de error
+        DBMS_OUTPUT.PUT_LINE('Error: El ID del rol no existe.');
+    ELSE
+        -- El ID del rol existe, obtener el nombre del rol
+        SELECT NOMBRE INTO v_nombre
+        FROM ROL
+        WHERE IDROL = p_idRol;
+        
+        -- Mostrar los datos del rol
+        DBMS_OUTPUT.PUT_LINE('ID Rol: ' || p_idRol || ' - Nombre: ' || v_nombre);
+    END IF;
+END;
+
+--Prueba en ORACLE
+SET SERVEROUTPUT ON
+DECLARE 
+    v_idRol NUMBER := 27;
+BEGIN
+    SP_LeerRol(v_idRol);
+END;
+
+--(ROL) Vista LeerRoles #4
+--Debe mostrar todos los datos de los roles
+
+CREATE OR REPLACE VIEW InfoRoles AS
+SELECT IDROL "ID", NOMBRE"Rol" 
+FROM ROL
+
+
+SELECT * FROM INFOROLES
+
+
+
+--SP Modulo USUARIO
+
+--5
 --Debe Crear un procedimiento que reciba como parametros:
 --idRol
 --Y realizar un select en usuarios donde se muestren solamente los usuarios que pertenezcan al rol creado.
@@ -252,10 +306,6 @@ EXCEPTION
         DBMS_OUTPUT.PUT_LINE('Error al filtrar los usuarios por rol: ' || SQLERRM);
 END;
 
-  
-DROP PROCEDURE SP_FiltrarUsuariosPorRol
-
-
 --prueba
 BEGIN
     SP_FiltrarUsuariosPorRol('');
@@ -287,3 +337,153 @@ END;
         WHEN OTHERS THEN
             DBMS_OUTPUT.PUT_LINE('Error al obtener los usuarios por rol: ' || SQLERRM);
     END;
+
+
+--(USUARIO) SP_CrearUsuario #7
+
+--Debe Crear un procedimiento que reciba como parametros:
+--nombre
+--primApellido
+--segApellido
+--cedula
+--correo
+--contrasena
+--idRol
+--Al tratar de crear se debe verificar por medio de la cedula, si existe no se debe registrar y debe retornar un mensaje 'El usuario ya fue creado previamente'
+
+CREATE OR REPLACE PROCEDURE SP_CrearUsuario(
+    p_nombre IN VARCHAR,
+    p_primApellido IN VARCHAR,
+    p_segApellido IN VARCHAR,
+    p_cedula IN VARCHAR,
+    p_correo IN VARCHAR,
+    p_contrasenna IN VARCHAR,
+    p_idRol IN NUMBER
+)
+AS
+    cuentaCedula NUMBER;
+    cuentaRol NUMBER;
+BEGIN
+    SELECT COUNT(*) INTO cuentaCedula FROM Usuario u
+    WHERE u.cedula = p_cedula;
+    
+    SELECT COUNT(*) INTO cuentaRol FROM Rol r
+    WHERE r.idrol = p_idRol;
+    
+    IF cuentaRol = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('El rol indicado no existe, no es posible crear el usuario con un rol inexistente.');
+    ELSIF cuentaCedula > 0 THEN
+        DBMS_OUTPUT.PUT_LINE('El usuario ya fue creado previamente.');
+    ELSE
+        INSERT INTO Usuario (nombre, primapellido, segapellido, cedula, correo, contrasenna, idrol, iddireccion)
+        VALUES (p_nombre, p_primApellido, p_segApellido, p_cedula, p_correo, p_contrasenna, p_idRol,0);
+        DBMS_OUTPUT.PUT_LINE('Usuario creado con éxito.');
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al crear el usuario: ' || SQLERRM);
+END;
+
+--Validación en Oracle
+SET SERVEROUTPUT ON
+DECLARE
+    p_nombre VARCHAR2(100) := 'John';
+    p_primApellido VARCHAR2(100) := 'Doe';
+    p_segApellido VARCHAR2(100) := 'Smith';
+    p_cedula VARCHAR2(100) := '123456789';
+    p_correo VARCHAR2(100) := 'john.doe@example.com';
+    p_contrasenna VARCHAR2(100) := 'password';
+    p_idRol NUMBER := 27; -- Reemplaza con el ID del rol adecuado
+BEGIN
+    SP_CrearUsuario(p_nombre, p_primApellido, p_segApellido, p_cedula, p_correo, p_contrasenna, p_idRol);
+END;
+
+--(Usuario) View UsuariosPorRol #8
+
+--Vista UsuariosxRol
+CREATE OR REPLACE VIEW V_UsuariosConRol AS
+SELECT u.idUsuario "ID Usuario", u.nombre "Nombre", u.primApellido "Primer Apellido", u.segApellido "Segundo Apellido", u.cedula "Cédula", u.correo "Correo", u.contrasenna "Contraseña", r.nombre AS "Rol"
+FROM Usuario u
+INNER JOIN Rol r ON u.idRol = r.idRol;
+
+
+--(USUARIO) Editar Usuario#9
+--Debe recibir como parametros
+--[ ] idUsuario
+--[ ] nombre
+--[ ] primApellido
+--[ ] segApellido
+--[ ] cedula
+--[ ] correo
+--[ ] contrasenna
+--[ ] idRol
+--[ ] idDireccion
+--y actualizar el usuario
+
+CREATE OR REPLACE PROCEDURE SP_EditarUsr(
+    p_idUsr IN NUMBER,
+    p_nombre IN VARCHAR,
+    p_primApellido IN VARCHAR,
+    p_segApellido IN VARCHAR,
+    p_cedula IN VARCHAR,
+    p_correo IN VARCHAR,
+    p_contrasenna IN VARCHAR,
+    p_idRol IN NUMBER, 
+    p_idDireccion IN NUMBER
+)AS
+    cuentaUsr NUMBER;
+    cuentaCedula NUMBER;
+    cuentaRol NUMBER;
+BEGIN
+    --Valida si el usuario existe
+    SELECT COUNT(*) INTO cuentaUsr FROM Usuario u
+    WHERE u.idUsuario = p_idUsr;
+
+    --valida si la cedula existe y está asignada a otra persona
+    SELECT COUNT(*) INTO cuentaCedula FROM Usuario u
+    WHERE u.cedula = p_cedula AND u.idUsuario != p_idUsr;
+    
+    --valida existencia del rol
+    SELECT COUNT(*) INTO cuentaRol FROM Rol r
+    WHERE r.idrol = p_idRol;
+    
+    IF cuentaUsr = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('El usuario indicado no existe.');
+    ELSIF cuentaRol = 0 THEN
+        DBMS_OUTPUT.PUT_LINE('El rol indicado no existe, no es posible editar el usuario con un rol inexistente.');
+    ELSIF cuentaCedula > 0 THEN
+        DBMS_OUTPUT.PUT_LINE('La cédula ingresada pertenece a otro usuario existente.');
+    ELSE
+        UPDATE Usuario SET
+        nombre = p_nombre,
+        primapellido = p_primApellido,
+        segapellido = p_segApellido,
+        cedula = p_cedula,
+        correo = p_correo,
+        contrasenna = p_contrasenna,
+        idrol = p_idRol
+        WHERE idUsuario = p_idUsr;
+        
+        DBMS_OUTPUT.PUT_LINE('Usuario editado con éxito.');
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al editar el usuario: ' || SQLERRM);
+END;
+
+--Prueba
+SET SERVEROUTPUT ON
+DECLARE
+    v_idUsr NUMBER := 3;
+    v_nombre VARCHAR2(100) := 'John';
+    v_primApellido VARCHAR2(100) := 'Doe';
+    v_segApellido VARCHAR2(100) := 'Smith';
+    v_cedula VARCHAR2(100) := '123456789';
+    v_correo VARCHAR2(100) := 'john.doe@example.com';
+    v_contrasenna VARCHAR2(100) := 'password';
+    v_idRol NUMBER := 27;
+    v_idDireccion NUMBER := 0;
+BEGIN
+    SP_EditarUsr(v_idUsr,v_nombre, v_primApellido, v_segApellido, v_cedula, v_correo, v_contrasenna, v_idRol, v_idDireccion);
+END;
+
