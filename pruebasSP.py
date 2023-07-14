@@ -165,3 +165,52 @@ def menu_editar_roles():
 
 
 
+#----------------------------MENUS--------------------------------
+def menu_roles():
+    print("EN DESARRROLLO")
+
+def menu_usuarios():
+    print("EN DESARRROLLO")
+
+def menu_tipoServicios():
+    print("EN DESARRROLLO")
+
+def menu_servicios():
+    print("EN DESARRROLLO")
+
+def menu_tipoProductos():
+    print("EN DESARRROLLO")
+
+def menu_productos():
+    print("EN DESARRROLLO")
+
+def MENU_PRINCIPAL():
+    op=""
+    while op!="0":
+        op=input(
+            "********** MENU **********\n"
+            "1. ROLES\n"
+            "2. USUARIOS\n"
+            "3. TIPO PRODUCTO\n"
+            "4. PRODUCTOS\n"
+            "5. TIPO SERVICIO\n"
+            "6. SERVICIOS\n"
+            "0. SALIR\n"
+            "Ingrese una opción:"
+        )
+        
+        if op=="1":
+            menu_roles()
+        elif op=="2":
+            menu_usuarios()
+        elif op=="3":
+            menu_tipoProductos()
+        elif op=="4":
+            menu_productos()
+        elif op=="5":
+            menu_tipoServicios()
+        elif op=="6":
+            menu_servicios()
+
+#---------------------------MAIN----------------------------------
+MENU_PRINCIPAL()
