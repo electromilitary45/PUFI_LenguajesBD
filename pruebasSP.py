@@ -116,7 +116,7 @@ def editar_rol(id_rol, nuevo_nombre):
 
         
 #PRUEBAS
-InsertRol()
+#InsertRol()
 
 ##Prueba vista roles
 # Llamar a la función y obtener los vectores de resultados
@@ -167,3 +167,4 @@ def menu_editar_roles():
         editar_rol(id_rol_a_editar, nuevo_nombre)
 
 
+menu_editar_roles()
