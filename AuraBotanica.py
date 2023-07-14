@@ -3,15 +3,24 @@ import cx_Oracle
 ##RUTA DEREK
 cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
 
-# ------------------ MUDLO ROLES ------------------ #
-def rolesDatos():
+def conexion():
     try:
         connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
+            user='DBA_AURA',
+            password='ADMIN1',
             dsn='localhost:1521/orcl',
             encoding='UTF-8'
         )
+        return connection
+    except cx_Oracle.Error as error:
+        print('Error al establecer la conexión: ',error)
+        return None
+
+
+# ------------------ MUDLO ROLES ------------------ #
+def rolesDatos(): 
+    try:
+        connection=conexion()
 
         ##print(connection.version)
         cursor=connection.cursor()
@@ -34,12 +43,7 @@ def rolesDatos():
 
 def rolesCant():
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
 
         ##print(connection.version)
         cursor=connection.cursor()
@@ -62,12 +66,7 @@ def InsertRol():
         nombreRol=input("Ingrese el nombre del rol: ")
     
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
         ##coneccion 
         cursor=connection.cursor()
         ## sentencia de insercion de rol
@@ -88,12 +87,7 @@ def InsertRol():
 
 def VerRoles():
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
 
         ##print(connection.version)
         cursor=connection.cursor()
@@ -152,12 +146,7 @@ def EditarRol():
             
             #---- ACTUALIZO EL ROL
             try:
-                connection=cx_Oracle.connect(
-                    user='DBADEREK',
-                    password='Villaley45',
-                    dsn='localhost:1521/orcl',
-                    encoding='UTF-8'
-                )
+                connection=conexion()
                 ##coneccion 
                 cursor=connection.cursor()
                 ## sentencia de update de rol
@@ -210,12 +199,7 @@ def EliminarRol():
                 print("El rol tiene usuarios asociados, no se puede eliminar")
             else:
                 try:
-                    connection=cx_Oracle.connect(
-                        user='DBADEREK',
-                        password='Villaley45',
-                        dsn='localhost:1521/orcl',
-                        encoding='UTF-8'
-                    )
+                    connection=conexion()
                     #Conexion
                     cursor=connection.cursor()
                     #---- ELIMINO EL ROL
@@ -234,12 +218,7 @@ def EliminarRol():
 
 def EncUsuarioID(idUsuario):
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
         ##print(connection.version)
         cursor=connection.cursor()
         cursor.execute("SELECT * FROM usuario WHERE idUsuario='"+str(idUsuario)+"'")
@@ -247,7 +226,6 @@ def EncUsuarioID(idUsuario):
         encontrado=False
         dUsuario=[]
         for row in results:
-            print(row[0])
             if (str(row[0])==idUsuario):
                 dUsuario=row
                 encontrado=True
@@ -259,7 +237,7 @@ def EncUsuarioID(idUsuario):
     finally:
         if connection:
             connection.close()
-    return encontrado,row
+    return encontrado,dUsuario
 
 def InsertUsuario():
     # DATOS DE USUARIO
@@ -303,16 +281,12 @@ def InsertUsuario():
             
         if (encontrado==False):
             print("Rol no encontrado/nReintente nuevamente")
+
     # ---- DIRECCION
     idDireccion=0
 
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
         ##coneccion 
         cursor=connection.cursor()
         ## sentencia de insercion de usuario
@@ -333,13 +307,7 @@ def InsertUsuario():
 
 def VerUsuarios():
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
-
+        connection=conexion()
         ##print(connection.version)
         cursor=connection.cursor()
 
@@ -400,12 +368,7 @@ def VerUsuarioEspecifico():
                 Correo=input("Ingrese el correo del usuario: ")
 
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
 
         ##print(connection.version)
         cursor=connection.cursor()
@@ -519,12 +482,7 @@ def ActualizarUsuario():
             #         idDireccion2=input("Ingrese la nueva direccion: ")
 
             try:
-                connection=cx_Oracle.connect(
-                    user='DBADEREK',
-                    password='Villaley45',
-                    dsn='localhost:1521/orcl',
-                    encoding='UTF-8'
-                )
+                connection=conexion()
                 ##coneccion 
                 cursor=connection.cursor()
                 ## sentencia de update de rol
@@ -546,12 +504,7 @@ def DesactivarUsuario():
 
 def VerUsuariosRol(idRol):
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
 
         ##print(connection.version)
         cursor=connection.cursor()
@@ -572,6 +525,47 @@ def VerUsuariosRol(idRol):
     return usuarios
 
 ##----------------- MODULO TIPO PRODUCTO -----------------## 
+def tipoProductoDatos():
+    try:
+        connection=conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoProducto")
+        results = cursor.fetchall()
+        tipoProducto=[]
+        
+        for row in results:
+            tipoProducto.append(row)
+            
+    except Exception as ex:
+        print(ex)
+        
+    finally:
+        if connection:
+            connection.close()
+    return tipoProducto
+
+def EncTipoProductoID(idTipoProducto):
+    try:
+        connection=conexion()
+        
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoProducto WHERE idTipoProducto='"+str(idTipoProducto)+"'")
+        results = cursor.fetchall()
+        encontrado=False
+        dTipoProducto=[]
+        for row in results:
+            if (str(row[0])==idTipoProducto):
+                dTipoProducto=row
+                encontrado=True
+                break
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
+    
+    return encontrado,row
 
 def insertarTipoProducto():
     ## ---- NOMBRE TIPO PRODUCTO
@@ -584,12 +578,7 @@ def insertarTipoProducto():
         desc=input("Ingrese la descripcion del tipo de producto: ")
     
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
         ##coneccion 
         cursor=connection.cursor()
         ## sentencia de insercion de rol
@@ -609,19 +598,195 @@ def insertarTipoProducto():
             print("Tipo de producto "+nombre+" creado con éxito")
 
 def verTipoProducto():
-    print("OPCIÓN EN DESARROLLO")
+    try:
+        connection=conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoProducto")
+        results = cursor.fetchall()
+        
+        print("Número de filas recuperadas:", len(results))
+        for row in results:
+            print(row)
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
 
 def editarTipoProducto():
-    print("OPCIÓN EN DESARROLLO")
+    print("*************TIPO PRODUCTO*************")
+    verTipoProducto()
+    print("****************************************")
+    
+    #pide el id del tipo de producto a actualizar
+    idTipoProducto=""
+    dTipoProducto=[]
+    
+    while (idTipoProducto==""):
+        idTipoProducto=input("Ingrese el id del tipo de producto a actualizar: ")
+
+    #se buscar el tipo de producto por id
+    (encontrado,dTipoProducto)=EncTipoProductoID(idTipoProducto)
+    
+    if encontrado:
+        idTipoProducto=dTipoProducto[0]
+        nombre=dTipoProducto[1]
+        desc=dTipoProducto[2]
+        
+        nombre2=""
+        des2=""
+        
+        op=""
+        while (str(op)!="0"):
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: ("+nombre+")\n"
+                "2. Descripcion: ("+desc+")\n"
+                "0. Salir"
+            )
+            op=input("Ingrese una opción: ")
+            if op=="1":
+                nombre=input("Ingrese el nuevo nombre: ")
+            elif op=="2":
+                desc=input("Ingrese la nueva descripcion: ")
+            
+            try:
+                connection=conexion()
+                cursor=connection.cursor()
+                cursor.execute("UPDATE TipoProducto SET nombre='"+nombre+"',descripcion='"+desc+"' WHERE idTipoProducto='"+str(idTipoProducto)+"'")
+                cursor.execute("commit")
+            except Exception as ex:
+                print(ex)
+            finally:
+                if connection:
+                    connection.close()
+                    print("Tipo de producto editado con éxito")
+                    
+    else:
+        print("Tipo de producto no encontrado")
 
 def verTipoProductoEspecifico():
-    print("OPCIÓN EN DESARROLLO")
+    print("OPCIÓN NO DISPONIBLE")
+    # op=""
+    # id=""
+    # nombre=""
+    # desc=""
+    
+    # while op!="0":
+    #     op=input(
+    #         "Con cual dato quiere buscar el tipo de producto:"
+    #         "\n1. ID"
+    #         "\n2. Nombre"
+    #         "\n0. Salir"
+    #     )
+        
+    #     if op=="1":
+    #         while id=="":
+    #             id=input("Ingrese el id del tipo de producto: ")
+    #     elif op=="2":
+    #         while nombre=="":
+    #             nombre=input("Ingrese el nombre del tipo de producto: ")
+        
+        
+    #     try:
+    #         connection=conexion()
+    #         cursor=connection.cursor()
+            
+    #         if op=="1":
+    #             cursor.execute("SELECT * FROM TipoProducto WHERE idTipoProducto='"+str(id)+"'")
+    #         elif op=="2":
+    #             cursor.execute("SELECT * FROM TipoProducto WHERE nombre='"+str(nombre)+"'")
+                
+    #         results = cursor.fetchall()
+    #         for row in results:
+    #             print(row)
+                
+    #     except Exception as ex:
+    #         print(ex)
+        
+    #     finally:
+    #         if connection:
+    #             connection.close()
 
 def eliminarTipoProducto():
-    print("OPCIÓN EN DESARROLLO")
-
+    
+    dTP=tipoProductoDatos()
+    sTPr=""
+    for i in dTP:
+        sTPr=sTPr+str(i)+"\n"
+    
+    print("*************TIPO PRODUCTO*************")
+    print(sTPr)
+    
+    op=""
+    while op=="":
+        op=input("Selecione el # de tipo de producto que desea eliminar o 'S' para cancelar:")
+    
+    if(op!="S"):
+        encontrado=False
+        for i in dTP:
+            if(op==str(i[0])):
+                encontrado=True
+                break
+        if encontrado:
+            productos=verProductosTipoProducto(op)
+            
+            if(len(productos)!=0):
+                print("El tipo de producto tiene productos asociados, no se puede eliminar")
+            else:
+                try:
+                    connection=conexion()
+                    cursor=connection.cursor()
+                    cursor.execute("DELETE FROM TipoProducto WHERE idTipoProducto='"+str(op)+"'")
+                    cursor.execute("commit")
+                except Exception as ex:
+                    print(ex)
+                finally:
+                    if connection:
+                        connection.close()
+                        print("Tipo de producto eliminado con éxito")
 
 ##------------------ MODULOS PRODUCTOS------------------##
+def EncProductoID(idProducto):
+    try:
+        connection=conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM Producto WHERE idProducto='"+str(idProducto)+"'")
+        results = cursor.fetchall()
+        encontrado=False
+        dProducto=[]
+        for row in results:
+            if (str(row[0])==idProducto):
+                dProducto=row
+                encontrado=True
+                break
+    except Exception as ex:
+        print(ex)
+    finally:
+        if connection:
+            connection.close()
+    return encontrado,dProducto
+
+def verProductosTipoProducto(op):
+    try:
+        connection=conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM Producto WHERE idTipoProducto='"+str(op)+"'")
+        results = cursor.fetchall()
+        datos=[]
+        
+        for row in results:
+            datos.append(row)
+            
+    except Exception as ex:
+        print(ex)
+        
+    finally:
+        if connection:
+            connection.close()
+            
+    return datos
 
 def CrearProducto():
     # ---- NOMBRE PRODUCTO
@@ -640,24 +805,48 @@ def CrearProducto():
     stock=""
     while (stock==""):
         stock=input("Ingrese el stock del producto: ")
+    
+    estatus="1"
     # ---- idTipoProducto
+    encontrado=False
     idTipoProducto=""
     while (idTipoProducto==""):
+        TPd=tipoProductoDatos()
+        sTP=""
+        for i in TPd:
+            sTP=sTP+str(i)+"\n"
+        print(sTP)
         idTipoProducto=input("Ingrese el idTipoProducto del producto: ")
+        
+        for i in TPd:
+            if (str(i[0])==idTipoProducto):
+                idTipoProducto=i[0]
+                encontrado=True
+                break
+        if encontrado!=True:
+            print("Tipo de producto no encontrado")
+            idTipoProducto=""
+    
+    try:
+        connection=conexion()
+        cursor=connection.cursor()
+        cursor.execute("INSERT INTO Producto (nombre,descripcion,precio,stock,estatus,idTipoProducto) VALUES('"+nombre+"','"+descripcion+"','"+str(precio)+"','"+str(stock)+"','"+str(estatus)+"','"+str(idTipoProducto)+"')")
+        cursor.execute("commit")
+    except Exception as ex:
+        print(ex)
+    finally:
+        if connection:
+            connection.close()
+            print("Producto "+nombre+" creado con éxito")
 
 def VerProductos():
     try:
-        connection=cx_Oracle.connect(
-            user='DBADEREK',
-            password='Villaley45',
-            dsn='localhost:1521/orcl',
-            encoding='UTF-8'
-        )
+        connection=conexion()
 
         ##print(connection.version)
         cursor=connection.cursor()
 
-        cursor.execute("SELECT * FROM TipoUsuario")
+        cursor.execute("SELECT * FROM producto")
         results = cursor.fetchall()
 
         print("Número de filas recuperadas:", len(results))
@@ -672,13 +861,298 @@ def VerProductos():
             connection.close()
 
 def EditarProducto():
-    print("OPCIÓN EN DESARROLLO")
+    print("***PRODUCTOS***")
+    VerProductos()
+    print("***************")
+    
+    #pide el id del producto a actualizar
+    idProducto=""
+    while (idProducto==""):
+        idProducto=input("Ingrese el id del producto a actualizar: ")
+        
+    dProducto=[]
+    (encontrado,dProducto)=EncProductoID(idProducto)
+    
+    if encontrado:
+        idProducto=dProducto[0]
+        nombre=dProducto[1]
+        descripcion=dProducto[2]
+        stock=dProducto[3]
+        status=dProducto[4]
+        precio=dProducto[5]
+        idTipoProducto=dProducto[6]
+        
+        op=""
+        while (str(op)!="0"):
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: ("+nombre+")\n"
+                "2. Descripcion: ("+descripcion+")\n"
+                "3. Stock: ("+str(stock)+")\n"
+                "4. Status: ("+str(status)+")\n"
+                "5. Precio: ("+str(precio)+")\n"
+                "6. Tipo de producto: ("+str(idTipoProducto)+")\n"
+                "0. Salir"
+            )
+            op=input("Ingrese una opción: ")
+            if op=="1":
+                nombre=input("Ingrese el nuevo nombre: ")
+            elif op=="2":
+                descripcion=input("Ingrese la nueva descripcion: ")
+            elif op=="3":
+                stock=input("Ingrese el nuevo stock: ")
+            elif op=="4":
+                status=input("Ingrese el nuevo status: ")
+            elif op=="5":
+                precio=input("Ingrese el nuevo precio: ")
+            elif op=="6":
+                verTipoProducto()
+                idTipoProducto=input("Ingrese el nuevo idTipoProducto: ")
+            
+            try:
+                connection=conexion()
+                cursor=connection.cursor()
+                cursor.execute("UPDATE Producto SET nombre='"+nombre+"',descripcion='"+descripcion+"',stock='"+str(stock)+"',estatus='"+str(status)+"',precio='"+str(precio)+"',idTipoProducto='"+str(idTipoProducto)+"' WHERE idProducto='"+str(idProducto)+"'")
+                cursor.execute("commit")
+            except Exception as ex:
+                print(ex)
+            finally:
+                if connection:
+                    connection.close()
+                    print("Producto editado con éxito")
+        else:
+            print("Producto no encontrado")
 
 def VerProductoEspecifico():
-    print("OPCIÓN EN DESARROLLO")
+    print("OPCIÓN NO DISPONIBLE")
 
 
-##------------------ MODULOS PEDIDOS------------------##
+##------------------ MODULOS TIPO DE SERVICIOS------------------##
+def tipoServicioDatos():
+    try:
+        connection=conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoServicio")
+        results = cursor.fetchall()
+        tipoProducto=[]
+        
+        for row in results:
+            tipoProducto.append(row)
+            
+    except Exception as ex:
+        print(ex)
+        
+    finally:
+        if connection:
+            connection.close()
+    return tipoProducto
+
+def EncTipoServicioID(idTipoServicio):
+    try:
+        connection=conexion()
+        
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoServicio WHERE idTipoServicio='"+str(idTipoServicio)+"'")
+        results = cursor.fetchall()
+        encontrado=False
+        dTipoServicio=[]
+        for row in results:
+            if (str(row[0])==idTipoServicio):
+                dTipoServicio=row
+                encontrado=True
+                break
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
+    
+    return encontrado,row
+
+def insertarTipoServicio():
+    ## ---- NOMBRE TIPO PRODUCTO
+    nombre=""
+    while (nombre==""):
+        nombre=input("Ingrese el nombre del tipo de servicio: ")
+    ## --- DESCRIPCION TIPO PRODUCTO
+    desc=""
+    while (desc==""):
+        desc=input("Ingrese la descripcion del tipo de servicio: ")
+    
+    try:
+        connection=conexion()
+        ##coneccion 
+        cursor=connection.cursor()
+        ## sentencia de insercion de rol
+        cursor.execute("INSERT INTO TipoServicio (nombre,descripcion) VALUES('"+nombre+"','"+desc+"')")
+        
+        # execute de un sp
+        #cursor.callproc("sp_insertar_rol", [nombreRol])
+        
+        ## commit
+        cursor.execute("commit")
+        
+    except Exception as ex:
+        print(ex)
+    finally:
+        if connection:
+            connection.close()
+            print("Tipo de producto "+nombre+" creado con éxito")
+
+def verTipoServicio():
+    try:
+        connection=conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoServicio")
+        results = cursor.fetchall()
+        
+        print("Número de filas recuperadas:", len(results))
+        for row in results:
+            print(row)
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
+
+def editarTipoServicio():
+    print("*************TIPO SERVICIO*************")
+    verTipoServicio()
+    print("****************************************")
+    
+    #pide el id del tipo de producto a actualizar
+    idTipoServicio=""
+    dTipoServicio=[]
+    
+    while (idTipoServicio==""):
+        idTipoServicio=input("Ingrese el id del tipo de servicio a actualizar: ")
+
+    #se buscar el tipo de producto por id
+    (encontrado,dTipoServicio)=EncTipoServicioID(idTipoServicio)
+    
+    if encontrado:
+        idTipoServicio=dTipoServicio[0]
+        nombre=dTipoServicio[1]
+        desc=dTipoServicio[2]
+        
+        nombre2=""
+        des2=""
+        
+        op=""
+        while (str(op)!="0"):
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: ("+nombre+")\n"
+                "2. Descripcion: ("+desc+")\n"
+                "0. Salir"
+            )
+            op=input("Ingrese una opción: ")
+            if op=="1":
+                nombre=input("Ingrese el nuevo nombre: ")
+            elif op=="2":
+                desc=input("Ingrese la nueva descripcion: ")
+            
+            try:
+                connection=conexion()
+                cursor=connection.cursor()
+                cursor.execute("UPDATE TipoServicio SET nombre='"+nombre+"',descripcion='"+desc+"' WHERE idTipoServicio='"+str(idTipoServicio)+"'")
+                cursor.execute("commit")
+            except Exception as ex:
+                print(ex)
+            finally:
+                if connection:
+                    connection.close()
+                    print("Tipo de servicio editado con éxito")
+                    
+    else:
+        print("Tipo de servicio no encontrado")
+
+def verTipoServicioEspecifico():
+    print("OPCIÓN NO DISPONIBLE")
+    # op=""
+    # id=""
+    # nombre=""
+    # desc=""
+    
+    # while op!="0":
+    #     op=input(
+    #         "Con cual dato quiere buscar el tipo de producto:"
+    #         "\n1. ID"
+    #         "\n2. Nombre"
+    #         "\n0. Salir"
+    #     )
+        
+    #     if op=="1":
+    #         while id=="":
+    #             id=input("Ingrese el id del tipo de producto: ")
+    #     elif op=="2":
+    #         while nombre=="":
+    #             nombre=input("Ingrese el nombre del tipo de producto: ")
+        
+        
+    #     try:
+    #         connection=conexion()
+    #         cursor=connection.cursor()
+            
+    #         if op=="1":
+    #             cursor.execute("SELECT * FROM TipoProducto WHERE idTipoProducto='"+str(id)+"'")
+    #         elif op=="2":
+    #             cursor.execute("SELECT * FROM TipoProducto WHERE nombre='"+str(nombre)+"'")
+                
+    #         results = cursor.fetchall()
+    #         for row in results:
+    #             print(row)
+                
+    #     except Exception as ex:
+    #         print(ex)
+        
+    #     finally:
+    #         if connection:
+    #             connection.close()
+
+def eliminarTipoServicio():
+    
+    dTP=tipoServicioDatos()
+    sTPr=""
+    for i in dTP:
+        sTPr=sTPr+str(i)+"\n"
+    
+    print("*************TIPO SERVICIO*************")
+    print(sTPr)
+    
+    op=""
+    while op=="":
+        op=input("Selecione el # de tipo de servicio que desea eliminar o 'S' para cancelar:")
+    
+    if(op!="S"):
+        encontrado=False
+        for i in dTP:
+            if(op==str(i[0])):
+                encontrado=True
+                break
+        if encontrado:
+            productos=verServiciosTipoServivios(op)
+            
+            if(len(productos)!=0):
+                print("El tipo de servicios tiene servicio asociados, no se puede eliminar")
+            else:
+                try:
+                    connection=conexion()
+                    cursor=connection.cursor()
+                    cursor.execute("DELETE FROM TipoServicio WHERE idTipoServicio='"+str(op)+"'")
+                    cursor.execute("commit")
+                except Exception as ex:
+                    print(ex)
+                finally:
+                    if connection:
+                        connection.close()
+                        print("Tipo de servicios eliminado con éxito")
+
+#------------------ MODULOS SERVICIOS------------------##
+def verServiciosTipoServivios(op):
+    print("OPCIÓN NO DISPONIBLE")
 
 
 ##------------------ MENUS------------------##
@@ -730,20 +1204,27 @@ def MENUUSUARIOS():
 def MENUTIPOPRODUCTO():
     op=""
     while op!="0":
-        input(
+        print(
             "********** MENU DE TIPO PRODUCTO**********\n"
-            "1. CREAR TIPO PRODUCTO\n"
-            "2. VER TIPO PRODUCTO\n"
-            "3. VER TIPO PRODUCTO ESPECIFICO\n"
-            "4. EDITAR TIPO PRODUCTO\n"
+            "1. CREAR TIPO SERVICIO\n"
+            "2. VER TIPO SERVICIO\n"
+            "3. VER TIPO SERVICIO ESPECIFICO\n"
+            "4. EDITAR TIPO SERVICIO\n"
+            "5. ELIMINAR TIPO SERVICIO\n"
             "0. SALIR\n"
-            "Ingrese una opción:"
         )
+        op=input("Ingrese una opción: ")
         
         if op=="1":
             insertarTipoProducto()
         elif op=="2":
             verTipoProducto()
+        elif op=="3":
+            verTipoProductoEspecifico()
+        elif op=="4":
+            editarTipoProducto()
+        elif op=="5":
+            eliminarTipoProducto()
 
 def MENUPRODUCTOS():
     op=""
@@ -766,6 +1247,34 @@ def MENUPRODUCTOS():
         elif op=="4":
             EditarProducto()
 
+def MENUTIPOSERVICIO():
+    op=""
+    while op!="0":
+        print(
+            "********** MENU DE TIPO SERVICIO**********\n"
+            "1. CREAR TIPO SERVICIO\n"
+            "2. VER TIPO SERVICIO\n"
+            "3. VER TIPO SERVICIO ESPECIFICO\n"
+            "4. EDITAR TIPO SERVICIO\n"
+            "5. ELIMINAR TIPO SERVICIO\n"
+            "0. SALIR\n"
+        )
+        op=input("Ingrese una opción: ")
+        
+        if op=="1":
+            insertarTipoServicio()
+        elif op=="2":
+            verTipoServicio()
+        elif op=="3":
+            verTipoServicioEspecifico()
+        elif op=="4":
+            editarTipoServicio()
+        elif op=="5":
+            eliminarTipoServicio()
+
+def MENUSERVICIOS():
+    print("OPCIÓN NO DISPONIBLE")
+
 def MENUPRINCIPAL():
     op=""
     while op!="0":
@@ -775,6 +1284,8 @@ def MENUPRINCIPAL():
             "2. USUARIOS\n"
             "3. TIPO PRODUCTO\n"
             "4. PRODUCTOS\n"
+            "5. TIPO SERVICIO\n"
+            "6. SERVICIOS\n"
             "0. SALIR\n"
             "Ingrese una opción:"
         )
@@ -787,6 +1298,10 @@ def MENUPRINCIPAL():
             MENUTIPOPRODUCTO()
         elif op=="4":
             MENUPRODUCTOS()
+        elif op=="5":
+            MENUTIPOSERVICIO()
+        elif op=="6":
+            MENUSERVICIOS()
 
 
 # -----PROGRAMA PRINCIPAL-----

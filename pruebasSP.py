@@ -1,5 +1,8 @@
 import cx_Oracle
 
+##RUTA DEREK
+cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
+
 def establecer_conexion():
     try:
         connection = cx_Oracle.connect(
@@ -13,6 +16,7 @@ def establecer_conexion():
         print('Error al establecer la conexión: ',error)
         return None
 
+# ------------------ MUDLO ROLES ------------------ #
 def InsertRol():
     # ---- Nombre rol
     nombreRol = ""
@@ -51,7 +55,6 @@ def InsertRol():
     finally:
         if connection:
             connection.close()
-
 
 def vistaRoles():
     idRol=[]
@@ -114,9 +117,9 @@ def editar_rol(id_rol, nuevo_nombre):
         cursor.close()
         connection.close()
 
-        
+
 #PRUEBAS
-#InsertRol()
+InsertRol()
 
 ##Prueba vista roles
 # Llamar a la función y obtener los vectores de resultados
@@ -135,9 +138,6 @@ def solicitar_id_rol():
             return int(id_rol_a_editar)
         else:
             print("Error: Por favor, ingrese un número válido.")
-
-
-
 
 def menu_editar_roles():
     # Obtener los registros de la vista InfoRoles
@@ -167,4 +167,3 @@ def menu_editar_roles():
         editar_rol(id_rol_a_editar, nuevo_nombre)
 
 
-menu_editar_roles()
