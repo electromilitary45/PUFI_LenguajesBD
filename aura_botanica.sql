@@ -487,3 +487,59 @@ BEGIN
     SP_EditarUsr(v_idUsr,v_nombre, v_primApellido, v_segApellido, v_cedula, v_correo, v_contrasenna, v_idRol, v_idDireccion);
 END;
 
+--------------------------------MODULO TIPO SERVICIO--------------------------------
+
+--(TIPO SERVICIO) SP_CrearTipoServicio 
+CREATE OR REPLACE PROCEDURE SP_CrearTipoServicio(
+    p_nombre IN TipoServicio.nombre%TYPE,
+    p_descripcion IN TipoServicio.descripcion%TYPE
+) AS
+    v_idTipoServicio TipoServicio.idTipoServicio%TYPE;
+    v_idTipoServicioComprobacion TipoServicio.idTipoServicio%TYPE;
+BEGIN
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    --VALIDAR QUE NO EXISTA UN TIPO DE SERVICIO CON EL MISMO NOMBRE
+    BEGIN
+        SELECT idTipoServicio INTO v_idTipoServicioComprobacion FROM TipoServicio WHERE nombre = p_nombre;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_idTipoServicioComprobacion := NULL;
+    END;
+
+    IF v_idTipoServicioComprobacion IS NOT NULL THEN
+        DBMS_OUTPUT.PUT_LINE('Error: El tipo de servicio ya existe.');
+    ELSE
+        INSERT INTO TipoServicio(nombre, descripcion) 
+        VALUES (p_nombre, p_descripcion) 
+        RETURNING idTipoServicio INTO v_idTipoServicio;
+
+        DBMS_OUTPUT.PUT_LINE('El tipo de servicio ha sido creado exitosamente. ID: ' || v_idTipoServicio || ' Nombre: ' || p_nombre || ' Descripción: ' || p_descripcion);
+    END IF;
+END;
+
+--(TIPOS SERVICIO) VIEW TIPOS SERVICIO
+CREATE OR REPLACE VIEW V_TiposServicio AS
+SELECT idTipoServicio, nombre, descripcion
+FROM TipoServicio;
+
+SET SERVEROUTPUT ON
+
+DECLARE
+    v_count NUMBER;
+BEGIN
+    -- Comprobar si existen datos en la vista
+    SELECT COUNT(*) INTO v_count FROM TipoServicio;
+
+    -- Mostrar mensaje según existencia de datos
+    IF v_count > 0 THEN
+        FOR TipoServicio IN (SELECT * FROM TipoServicio) LOOP
+            DBMS_OUTPUT.PUT_LINE('ID: ' || tiposervicio.idTipoServicio || ' Nombre: ' || tiposervicio.nombre || ' Descripción: ' || tiposervicio.descripcion);
+        END LOOP;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('No hay datos disponibles en la vista.');
+    END IF;
+END;
+
+

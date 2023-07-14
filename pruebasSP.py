@@ -1,5 +1,8 @@
 import cx_Oracle
 
+##RUTA DEREK
+cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
+
 def establecer_conexion():
     try:
         connection = cx_Oracle.connect(
@@ -116,7 +119,7 @@ def editar_rol(id_rol, nuevo_nombre):
 
 
 #PRUEBAS
-InsertRol()
+# InsertRol()
 
 ##Prueba vista roles
 # Llamar a la función y obtener los vectores de resultados
@@ -163,6 +166,180 @@ def menu_editar_roles():
         nuevo_nombre = input("\nIngrese el nuevo nombre para el rol: ")
         editar_rol(id_rol_a_editar, nuevo_nombre)
 
+#---------------------MODULO TIPO SERVICIOS---------------------
+def tipoServicioDatos():
+    try:
+        connection=establecer_conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoServicio")
+        results = cursor.fetchall()
+        tipoProducto=[]
+        
+        for row in results:
+            tipoProducto.append(row)
+            
+    except Exception as ex:
+        print(ex)
+        
+    finally:
+        if connection:
+            connection.close()
+    return tipoProducto
+
+def EncTipoServicioID(idTipoServicio):
+    try:
+        connection=establecer_conexion()
+        
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoServicio WHERE idTipoServicio='"+str(idTipoServicio)+"'")
+        results = cursor.fetchall()
+        encontrado=False
+        dTipoServicio=[]
+        for row in results:
+            if (str(row[0])==idTipoServicio):
+                dTipoServicio=row
+                encontrado=True
+                break
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
+    
+    return encontrado,row
+
+def InsertTipoServicio():
+    ## ---- NOMBRE TIPO PRODUCTO
+    nombre=""
+    while (nombre==""):
+        nombre=input("Ingrese el nombre del tipo de servicio: ")
+    ## --- DESCRIPCION TIPO PRODUCTO
+    desc=""
+    while (desc==""):
+        desc=input("Ingrese la descripcion del tipo de servicio: ")
+    
+    try:
+        # Establecer la conexión a la base de datos
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
+        else:
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_CrearTipoServicio",[nombre,desc])
+            # Recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+            
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# InsertTipoServicio()
+
+def vistaTipoServicio():
+    try:
+        # Establecer la conexión a la base de datos
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
+        else:
+            cur=con.cursor()
+            cur.callproc("DBMS_OUTPUT.ENABLE")
+            cur.execute("SELECT * FROM V_TiposServicio")
+            
+            # Recuperar los mensajes de salida
+            results = cur.fetchall()
+            if results:
+                print("---Tipos de Servicios Registrados---")
+                print("ID","\tNombre","\tDescripcion")
+                for row in results:
+                    print(row[0],"\t",row[1],"\t",row[2])
+            else:
+                print("No hay registros")
+
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# vistaTipoServicio()
+
+def verTipoProductoEspecifico():
+    # op=0
+    # nombre=""
+    # id=0
+    # while op!=1 and op!=2:
+    #     input("Ingrese 1 para buscar por ID o 2 para buscar por nombre: ")
+    
+    # if op==1:
+    #     id=input("Ingrese el ID del tipo de producto: ")
+    # else:
+    #     nombre=input("Ingrese el nombre del tipo de producto: ")
+    
+    # try:
+    print("EN DESARRROLLO")
+
+def editarTipoServicio():
+    vistaTipoServicio()
+    
+    #pide el id del tipo de producto a actualizar
+    idTipoServicio=""
+    dTipoServicio=[]
+    
+    while (idTipoServicio==""):
+        idTipoServicio=input("Ingrese el id del tipo de servicio a actualizar: ")
+
+    #se buscar el tipo de producto por id
+    (encontrado,dTipoServicio)=EncTipoServicioID(idTipoServicio)
+    
+    if encontrado:
+        idTipoServicio=dTipoServicio[0]
+        nombre=dTipoServicio[1]
+        desc=dTipoServicio[2]
+        
+        nombre2=""
+        des2=""
+        
+        op=""
+        while (str(op)!="0"):
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: ("+nombre+")\n"
+                "2. Descripcion: ("+desc+")\n"
+                "0. Salir"
+            )
+            op=input("Ingrese una opción: ")
+            if op=="1":
+                nombre=input("Ingrese el nuevo nombre: ")
+            elif op=="2":
+                desc=input("Ingrese la nueva descripcion: ")
+            
+            try:
+                connection=establecer_conexion()
+                cursor=connection.cursor()
+                cursor.execute("UPDATE TipoServicio SET nombre='"+nombre+"',descripcion='"+desc+"' WHERE idTipoServicio='"+str(idTipoServicio)+"'")
+                cursor.execute("commit")
+            except Exception as ex:
+                print(ex)
+            finally:
+                if connection:
+                    connection.close()
+                    print("Tipo de servicio editado con éxito")
+                    
+    else:
+        print("Tipo de servicio no encontrado")
+
+def eliminarTipoProducto():
+    print("EN DESARRROLLO")
 
 
 #----------------------------MENUS--------------------------------
@@ -173,7 +350,29 @@ def menu_usuarios():
     print("EN DESARRROLLO")
 
 def menu_tipoServicios():
-    print("EN DESARRROLLO")
+    op=""
+    while op!="0":
+        print(
+            "********** MENU DE TIPO PRODUCTO**********\n"
+            "1. CREAR TIPO SERVICIO\n"
+            "2. VER TIPO SERVICIO\n"
+            "3. VER TIPO SERVICIO ESPECIFICO\n"
+            "4. EDITAR TIPO SERVICIO\n"
+            "5. ELIMINAR TIPO SERVICIO\n"
+            "0. SALIR\n"
+        )
+        op=input("Ingrese una opción: ")
+        
+        if op=="1":
+            InsertTipoServicio()
+        elif op=="2":
+            vistaTipoServicio()
+        elif op=="3":
+            verTipoProductoEspecifico()
+        elif op=="4":
+            editarTipoProducto()
+        elif op=="5":
+            eliminarTipoProducto()
 
 def menu_servicios():
     print("EN DESARRROLLO")
@@ -213,4 +412,4 @@ def MENU_PRINCIPAL():
             menu_servicios()
 
 #---------------------------MAIN----------------------------------
-MENU_PRINCIPAL()
+# MENU_PRINCIPAL()

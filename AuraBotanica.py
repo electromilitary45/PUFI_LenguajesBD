@@ -932,7 +932,7 @@ def tipoServicioDatos():
     try:
         connection=conexion()
         cursor=connection.cursor()
-        cursor.execute("SELECT * FROM TipoProducto")
+        cursor.execute("SELECT * FROM TipoServicio")
         results = cursor.fetchall()
         tipoProducto=[]
         
