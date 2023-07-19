@@ -342,6 +342,90 @@ def eliminarTipoProducto():
     print("EN DESARRROLLO")
 
 #-------------------------MODULO SERVICIOS-------------------------
+def InsertServicio():
+    print ("EN DESARROLLO")
+    nombre=""
+    while(nombre==""):
+        nombre=input("Ingrese el nombre del servicio: ")
+    desc=""
+    while(desc==""):
+        desc=input("Ingrese la descripcion del servicio: ")
+    img="/"
+    cupos=0
+    while(cupos==0):
+        cupos=input("Ingrese el numero de cupos: ")
+    estatus=1
+    fecha=""
+    ##la fecha se ingresa en el formato dd/mmm/yyy (ejemplo: 01/ene/2021)
+    while(fecha==""):
+        fecha=input("Ingrese la fecha: (dd/mmm/yyyy) (ejemplo 01/jan/2011): ")
+    idTipoServicio=0
+    while(idTipoServicio==0):
+        vistaTipoServicio()
+        idTipoServicio=input("Ingrese el id del tipo de servicio: ")
+    try:
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos")
+        else:
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_CrearServicio",[nombre,img,desc,cupos,estatus,fecha,idTipoServicio])
+            # Recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+
+def vistaServicios():
+    try:
+        # Establecer la conexión a la base de datos
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
+        else:
+            cur=con.cursor()
+            cur.callproc("DBMS_OUTPUT.ENABLE")
+            cur.execute("SELECT * FROM V_Servicios")
+            
+            # Recuperar los mensajes de salida
+            results = cur.fetchall()
+            if results:
+                print("---Servicios Registrados---")
+                print("ID","\tNombre","\tDescripcion","\tCupos","\tEstatus","\tFecha","\tTipoServicio")
+                for row in results:
+                    print(row[0],"\t",row[1],"\t",row[3],"\t",row[4],"\t",row[5],"\t",row[6],"\t",row[7])
+            else:
+                print("No hay registros")
+
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+
+def verServicioEspecifico():
+    print("EN DESARRROLLO")
+
+def editarServicio():
+    print("EN DESARRROLLO")
+
+def eliminarServicio():
+    print("EN DESARRROLLO")
+
+def verServiciosPorTipo():
+    print("EN DESARRROLLO")
+
+
 
 
 #----------------------------MENUS--------------------------------
@@ -377,7 +461,31 @@ def menu_tipoServicios():
             eliminarTipoProducto()
 
 def menu_servicios():
-    print("EN DESARRROLLO")
+    op=""
+    while op!="0":
+        print("***************** MENU DE SERVICIOS *****************\n"
+              "1. CREAR SERVICIO\n"
+              "2. VER SERVICIOS\n"
+              "3. VER SERVICIO ESPECIFICO\n"
+              "4. EDITAR SERVICIO\n"
+              "5. ELIMINAR SERVICIO\n"
+              "6. VER SERVICIOS POR TIPO\n"
+              "0. SALIR\n"
+        )
+        op=input("Ingrese una opción: ")
+        if op=="1":
+            InsertServicio()
+        elif op=="2":
+            vistaServicios()
+        elif op=="3":
+            verServicioEspecifico()
+        elif op=="4":
+            editarServicio()
+        elif op=="5":
+            eliminarServicio()
+        elif op=="6":
+            verServiciosPorTipo()
+
 
 def menu_tipoProductos():
     print("EN DESARRROLLO")

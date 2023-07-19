@@ -543,3 +543,57 @@ BEGIN
 END;
 
 
+--------------------------------MODULO SERVICIO--------------------------------
+
+-----Sp_INSERTAR SERVICIO----
+CREATE PROCEDURE SP_CrearServicio(
+    p_nombre IN Servicio.nombre%TYPE,
+    p_img IN Servicio.img%TYPE,
+    p_descripcion IN Servicio.descripcion%TYPE,
+    p_cupos IN Servicio.cupos%TYPE,
+    p_estatus IN Servicio.estatus%TYPE,
+    p_fecha IN Servicio.fecha%TYPE,
+    p_idTipoServicio IN Servicio.idTipoServicio%TYPE
+) AS
+    v_idServicio Servicio.idServicio%TYPE;
+    v_idServicioComprobacion Servicio.idServicio%TYPE;
+    v_idTipoServicioComprobacion TipoServicio.idTipoServicio%TYPE;
+BEGIN
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    ---VALIDAR QUE NO EXISTA UN SERVICIO CON EL MISMO NOMBRE
+    BEGIN
+        SELECT idServicio INTO v_idServicioComprobacion FROM Servicio WHERE nombre = p_nombre;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_idServicioComprobacion := NULL;
+    END;
+
+    ---VALIDAR QUE EXISTA UN TIPO DE SERVICIO CON EL MISMO ID
+    BEGIN
+        SELECT idTipoServicio INTO v_idTipoServicioComprobacion FROM TipoServicio WHERE idTipoServicio = p_idTipoServicio;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_idTipoServicioComprobacion := NULL;
+    END;
+
+    --VALIDAR QUE NO EXISTA UN SERVICIO CON EL MISMO NOMBRE Y QUE EL TIPO DE SERVICIO EXISTA
+    IF v_idServicioComprobacion IS NOT NULL AND v_idTipoServicioComprobacion IS NULL THEN
+        DBMS_OUTPUT.PUT_LINE('Error: El servicio ya existe o el tipo de servicio no existe.');
+    ELSE
+        --INSERTAR SERVICIO
+        INSERT INTO Servicio(nombre, img, descripcion, cupos, estatus, fecha, idTipoServicio) 
+        VALUES (p_nombre, p_img, p_descripcion, p_cupos, p_estatus, p_fecha, p_idTipoServicio) 
+        RETURNING idServicio INTO v_idServicio;
+
+        DBMS_OUTPUT.PUT_LINE('El servicio ha sido creado exitosamente. ID: ' || v_idServicio || ' Nombre: ' || p_nombre || ' Imagen: ' || p_img || ' Descripción: ' || p_descripcion || ' Cupos: ' || p_cupos || ' Estatus: ' || p_estatus || ' Fecha: ' || p_fecha || ' ID Tipo Servicio: ' || p_idTipoServicio);
+    END IF;
+
+END;
+
+--VIEW SERVICIOS--
+CREATE OR REPLACE VIEW V_Servicios AS
+    SELECT u.idServicio, u.nombre, u.img, u.descripcion, u.cupos, u.estatus, u.fecha, t.nombre  AS "Tipo Servicio"
+    FROM Servicio u
+    INNER JOIN TipoServicio t ON u.idTipoServicio = t.idTipoServicio;
