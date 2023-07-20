@@ -489,7 +489,7 @@ END;
 
 --------------------------------MODULO TIPO SERVICIO--------------------------------
 
---(TIPO SERVICIO) SP_CrearTipoServicio 
+--------------------(TIPO SERVICIO) SP_CrearTipoServicio -----------------------
 CREATE OR REPLACE PROCEDURE SP_CrearTipoServicio(
     p_nombre IN TipoServicio.nombre%TYPE,
     p_descripcion IN TipoServicio.descripcion%TYPE
@@ -519,7 +519,7 @@ BEGIN
     END IF;
 END;
 
---(TIPOS SERVICIO) VIEW TIPOS SERVICIO
+---------------------(TIPOS SERVICIO) VIEW TIPOS SERVICIO----------------------
 CREATE OR REPLACE VIEW V_TiposServicio AS
 SELECT idTipoServicio, nombre, descripcion
 FROM TipoServicio;
@@ -542,11 +542,85 @@ BEGIN
     END IF;
 END;
 
+------------------(TIPO SERVICIO) SP_EditarTipoServicio--------------------------
+CREATE OR REPLACE PROCEDURE SP_EditarTipoServicio(
+    p_idTipoServicio IN TipoServicio.idTipoServicio%TYPE,
+    p_nombre IN TipoServicio.nombre%TYPE,
+    p_descripcion IN TipoServicio.descripcion%TYPE
+) AS
+    v_idTipoServicio TipoServicio.idTipoServicio%TYPE;
+    v_idTipoServicioComprobacion TipoServicio.idTipoServicio%TYPE;
+BEGIN
 
---------------------------------MODULO SERVICIO--------------------------------
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    if p_idTipoServicio IS NOT NULL THEN
+        
+        --VALIDAR QUE EXISTA UN TIPO DE SERVICIO CON EL MISMO ID
+        BEGIN
+            SELECT idTipoServicio INTO v_idTipoServicioComprobacion FROM TipoServicio WHERE idTipoServicio = p_idTipoServicio;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                v_idTipoServicioComprobacion := NULL;
+        END;
+
+        IF v_idTipoServicioComprobacion IS NOT NULL THEN
+            UPDATE TipoServicio SET
+            nombre = p_nombre,
+            descripcion = p_descripcion
+            WHERE idTipoServicio = p_idTipoServicio;
+            
+            DBMS_OUTPUT.PUT_LINE('Tipo de servicio editado con éxito.');
+        ELSE
+            DBMS_OUTPUT.PUT_LINE('Error: El tipo de servicio no existe.');
+        END IF;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Error: El ID del tipo de servicio es nulo.');
+    END IF;
+END;
+
+------------(TipoServicio) SP_EliminarTipoServicio------------------
+CREATE OR REPLACE PROCEDURE SP_EliminarTipoServicio(
+    p_idTipoServicio IN TipoServicio.idTipoServicio%TYPE
+) AS
+    v_idTipoServicio TipoServicio.idTipoServicio%TYPE;
+    v_idTipoServicioComprobacion TipoServicio.idTipoServicio%TYPE;
+    v_cantidadServicios NUMBER;
+BEGIN
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    --VALIDAR QUE EXISTA UN TIPO DE SERVICIO CON EL MISMO ID
+    BEGIN
+        SELECT idTipoServicio INTO v_idTipoServicioComprobacion FROM TipoServicio WHERE idTipoServicio = p_idTipoServicio;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_idTipoServicioComprobacion := NULL;
+    END;
+
+    if p_idTipoServicio IS NOT NULL THEN
+        BEGIN
+            --VALIDAR QUE NO EXISTAN SERVICIOS CON EL MISMO TIPO DE SERVICIO y contarlos
+            SELECT COUNT(*) INTO v_cantidadServicios FROM Servicio WHERE idTipoServicio = p_idTipoServicio;
+        end;
+        if v_cantidadServicios > 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Error: No se puede eliminar el tipo de servicio porque existen servicios asociados a él.');
+        ELSE
+            DELETE FROM TipoServicio WHERE idTipoServicio = p_idTipoServicio;
+            DBMS_OUTPUT.PUT_LINE('Tipo de servicio eliminado con éxito.');
+        END IF;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Error: El ID del tipo de servicio es nulo o no existe.');
+    END IF;
+END;
+
+
+
+-------------\-------------------MODULO SERVICIO-----------------\---------------
 
 -----Sp_INSERTAR SERVICIO----
-CREATE PROCEDURE SP_CrearServicio(
+CREATE OR REPLACE PROCEDURE SP_CrearServicio(
     p_nombre IN Servicio.nombre%TYPE,
     p_img IN Servicio.img%TYPE,
     p_descripcion IN Servicio.descripcion%TYPE,
@@ -592,12 +666,61 @@ BEGIN
 
 END;
 
---VIEW SERVICIOS--
+-----------------VIEW SERVICIOS---------------
 CREATE OR REPLACE VIEW V_Servicios AS
     SELECT u.idServicio, u.nombre, u.img, u.descripcion, u.cupos, u.estatus, u.fecha, t.nombre  AS "Tipo Servicio"
     FROM Servicio u
     INNER JOIN TipoServicio t ON u.idTipoServicio = t.idTipoServicio;
 
+----------------editar servicio----------------
+CREATE OR REPLACE PROCEDURE SP_editarServicio(
+    p_idServicio IN Servicio.idServicio%TYPE,
+    p_nombre IN Servicio.nombre%TYPE,
+    p_descripcion IN Servicio.descripcion%TYPE,
+    p_cupos IN Servicio.cupos%TYPE,
+    p_estatus IN Servicio.estatus%TYPE,
+    p_fecha IN Servicio.fecha%TYPE,
+    p_idTipoServicio IN Servicio.idTipoServicio%TYPE
+) AS
+    v_idServicio Servicio.idServicio%TYPE;
+    v_idServicioComprobacion Servicio.idServicio%TYPE;
+    v_idTipoServicioComprobacion TipoServicio.idTipoServicio%TYPE;
+BEGIN
+    ---configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    ---VALIDAR QUE EXISTA UN SERVICIO CON EL MISMO ID
+    BEGIN
+        SELECT idServicio INTO v_idServicioComprobacion FROM Servicio WHERE idServicio = p_idServicio;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_idServicioComprobacion := NULL;
+    END;
+
+    ---VALIDAR QUE EXISTA UN TIPO DE SERVICIO CON EL MISMO ID
+    BEGIN
+        SELECT idTipoServicio INTO v_idTipoServicioComprobacion FROM TipoServicio WHERE idTipoServicio = p_idTipoServicio;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_idTipoServicioComprobacion := NULL;
+    END;
+
+    --validar que los datos no sean nulos
+    IF v_idServicioComprobacion is not null and v_idTipoServicioComprobacion is not null THEN
+        UPDATE Servicio SET
+        nombre = p_nombre,
+        descripcion = p_descripcion,
+        cupos = p_cupos,
+        estatus = p_estatus,
+        fecha = p_fecha,
+        idTipoServicio = p_idTipoServicio
+        WHERE idServicio = p_idServicio;
+        
+        DBMS_OUTPUT.PUT_LINE('Servicio editado con éxito.');
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Error: El servicio no existe o el tipo de servicio no existe.');
+    END IF;
+END;
 
 --------------------------------MODULO Resenna--------------------------------
 
