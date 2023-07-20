@@ -700,16 +700,16 @@ BEGIN
     DECLARE
         cuenta NUMBER;
     BEGIN
-        SELECT COUNT(*) INTO cuenta FROM Resenna WHERE p_idRresenna = p_idResenna;
+        SELECT COUNT(*) INTO cuenta FROM Resenna WHERE idRresenna = p_idResenna;
         
         IF cuenta = 0 THEN
             DBMS_OUTPUT.PUT_LINE('Error: La reseña no existe.');
         ELSE
             -- Actualiza los datos de reseña
             UPDATE Resenna SET estatus = p_estatus,
-                                descripcion = p_descripcion,
-                                idProducto = p_idProducto,
-                                idUsuario = p_idUsuario
+                               descripcion = p_descripcion,
+                               idProducto = p_idProducto,
+                               idUsuario = p_idUsuario
             WHERE idResenna = p_idResenna;
             DBMS_OUTPUT.PUT_LINE('La reseña ha sido editada exitosamente.');
         END IF;
@@ -797,3 +797,184 @@ SELECT * FROM View_LeerResennaActiva;
 
 ------------------------------FIN MODULO Resenna------------------------------
 
+--------------------------------MODULO Direcciones--------------------------------
+
+--SP_EditarDireccion
+-- Debe recibir como parametros
+-- -[ ] idUsuario
+-- -[ ] provincia
+-- -[ ] canton
+-- -[ ] distrito
+-- -[ ] codPostal
+-- -[ ] senalesExactas
+
+-- y actualizar el usuario
+
+CREATE OR REPLACE PROCEDURE SP_EditarDireccion
+(
+    p_idDireccion IN NUMERIC,
+    p_provincia IN VARCHAR2,
+    p_caton IN VARCHAR2,
+    p_distrito IN VARCHAR2,
+    p_codPostal IN NUMERIC,
+    p_senalesExactas IN VARCHAR2,
+    p_idUsuario in NUMERIC
+) AS
+BEGIN
+    --Valida ID nulo
+    IF p_idDireccion IS NULL THEN
+        DBMS_OUTPUT.PUT_LINE('Error: El ID ingresado es nulo.');
+        RETURN;
+    END IF;
+
+    -- Verifica existencia de la direccion
+    DECLARE
+        cuenta NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO cuenta FROM Direccion WHERE idDireccion = p_idDireccion;
+        
+        IF cuenta = 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Error: La direccion no existe.');
+        ELSE
+            -- Actualiza los datos de reseña
+            UPDATE Direccion SET provincia = p_provincia,
+                                 canton = p_canton,
+                                 distrito = p_distrito,
+                                 codPostal = p_codPostal,
+                                 senalesExactas = p_senalesExactas,
+                                 idUsuario = p_idUsuario
+            WHERE idDireccion = p_idDireccion;
+            DBMS_OUTPUT.PUT_LINE('La direccion ha sido editada exitosamente.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al editar la direccion: ' || SQLERRM);
+    END;
+END;
+
+--SP_LeerDireccion (UNICO)
+-- debe de recibir por parámetro:
+-- -[ ] idUsuario
+
+-- retornar todos los datos de direcciones:
+-- -[ ] idUsuario
+-- -[ ] idDireccion
+-- -[ ] provincia
+-- -[ ] canton
+-- -[ ] distrito
+-- -[ ] codPostal
+-- -[ ] senalesExtras
+
+-- ademas mostrar los siguientes datos de la tabla usuarios:
+-- -[ ] nombre
+-- -[ ] primApellido
+-- -[ ] segApellido
+
+CREATE OR REPLACE PROCEDURE SP_LeerDireccionUnico(
+    p_idDireccion IN NUMBER,
+    p_idUsuario IN NUMERIC
+) AS
+    v_cuenta NUMBER;
+    --Datos Direccion
+    v_idUsuario IN Direccion.idUsuario%TYPE;
+    v_provincia IN Direccion.provincia%TYPE;
+    v_canton IN Direccion.canton%TYPE;
+    v_distrito IN Direccion.distrito%TYPE;
+    v_codPostal IN Direccion.codPostal%TYPE;
+    v_senalesExactas IN Resenna.senalesExactas%TYPE;
+    --Datos Usuario
+    v_nombreUser IN Usuario.nombre%TYPE;
+    v_primApellido IN Usuario.primApellido%TYPE;
+    v_segApellido IN Usuario.segApellido%TYPE;
+BEGIN
+    -- Verificar si el ID de la direccion existe
+    SELECT COUNT(*) INTO v_cuenta
+    FROM Direccion
+    WHERE idDireccion = p_idDireccion;
+    
+    IF v_cuenta = 0 THEN
+        -- El ID de la direccion no existe, mostrar un mensaje de error
+        DBMS_OUTPUT.PUT_LINE('Error: El ID de la direccion no existe.');
+    ELSE
+        -- El ID de la direccion existe
+        SELECT d.idUsuario, d.provincia, d.canton, d.distrito, d.codPostal, d.senalesExactas, u.nombre, u.primApellido, u.segApellido 
+        INTO v_idUsuario, v_provincia, v_canton, v_distrito, v_codPostal, v_senalesExactas, v_nombreUser, v_primApellido, v_segApellido
+        FROM Direccion d
+        JOIN Usuario u ON d.idUsuario = u.idUsuario
+        WHERE u.idUsuario = p_idUsuario;
+        
+        -- Mostrar los datos de la direccion
+        DBMS_OUTPUT.PUT_LINE('ID Usuario: ' || p_idUsuario || ' Nombre Usuario: ' || v_nombre || ' Primer Apellido: ' || v_primApellido || ' Segundo Apellido: ' || v_segApellido || ' ID Direccion: ' || p_idDireccion || ' Provincia: ' || v_provincia || ' Canton: ' || v_canton || ' Distrito: ' || v_distrito || ' Codigo Postal: ' || v_codPostal || ' Señales Exactas: ' || v_senalesExactas);
+    END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al leer la direccion: ' || SQLERRM);
+    END;
+END;
+
+--View_LeerDireccion (TODOS)
+-- retornar todos los datos de direccion:
+-- -[ ] idUsuario
+-- -[ ] idDireccion
+-- -[ ] provincia
+-- -[ ] canton
+-- -[ ] distrito
+-- -[ ] codPostal
+-- -[ ] senalesExtras
+
+-- ademas mostrar los siguientes datos de la tabla usuarios:
+-- -[ ] nombre
+-- -[ ] primApellido
+-- -[ ] segApellido
+
+CREATE OR REPLACE VIEW View_LeerDireccionTodos AS
+SELECT d.idUsuario, d.idDireccion, d.provincia, d.canton, d.distrito, d.codPostal, d.senalesExactas, u.nombre, u.primApellido, u.segApellido
+FROM Direccion d
+JOIN Usuario u ON d.idUsuario = u.idUsuario
+WHERE u.idUsuario = p_idUsuario;
+
+SELECT * FROM View_LeerDireccionTodos;
+
+--Trigger_VerDireccionCreada
+-- Se debe de mostrar la direccion creada anteriormente
+
+SET SERVEROUTPUT ON;
+
+CREATE OR REPLACE TRIGGER Trigger_VerDireccionCreada
+AFTER INSERT ON Direccion
+FOR EACH ROW
+DECLARE
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('--- Dirección creada anteriormente ---');
+    DBMS_OUTPUT.PUT_LINE('ID Usuario: ' || Direccion.idUsuario);
+    DBMS_OUTPUT.PUT_LINE('ID Direccion: ' || Direccion.idDireccion);
+    DBMS_OUTPUT.PUT_LINE('Provincia: ' || Direccion.provincia);
+    DBMS_OUTPUT.PUT_LINE('Canton: ' || Direccion.canton);
+    DBMS_OUTPUT.PUT_LINE('Distrito: ' || Direccion.distrito);
+    DBMS_OUTPUT.PUT_LINE('CodPostal: ' || Direccion.codPostal);
+    DBMS_OUTPUT.PUT_LINE('Senales Extras: ' || Direccion.senalesExactas);
+    DBMS_OUTPUT.PUT_LINE('------------------------------------');
+END;
+
+--Trigger_VerDireccionEditada
+-- Se debe de mostrar la direccion creada anteriormente
+
+SET SERVEROUTPUT ON;
+
+CREATE OR REPLACE TRIGGER Trigger_VerDireccionCreada
+AFTER UPDATE ON Direccion
+FOR EACH ROW
+DECLARE
+BEGIN
+    DBMS_OUTPUT.PUT_LINE('--- Dirección editada anteriormente ---');
+    DBMS_OUTPUT.PUT_LINE('ID Usuario: ' || Direccion.idUsuario);
+    DBMS_OUTPUT.PUT_LINE('ID Direccion: ' || Direccion.idDireccion);
+    DBMS_OUTPUT.PUT_LINE('Provincia: ' || Direccion.provincia);
+    DBMS_OUTPUT.PUT_LINE('Canton: ' || Direccion.canton);
+    DBMS_OUTPUT.PUT_LINE('Distrito: ' || Direccion.distrito);
+    DBMS_OUTPUT.PUT_LINE('CodPostal: ' || Direccion.codPostal);
+    DBMS_OUTPUT.PUT_LINE('Senales Extras: ' || Direccion.senalesExactas);
+    DBMS_OUTPUT.PUT_LINE('------------------------------------');
+END;
+
+------------------------------Fin MODULO Direcciones------------------------------
