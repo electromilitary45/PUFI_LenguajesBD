@@ -597,3 +597,203 @@ CREATE OR REPLACE VIEW V_Servicios AS
     SELECT u.idServicio, u.nombre, u.img, u.descripcion, u.cupos, u.estatus, u.fecha, t.nombre  AS "Tipo Servicio"
     FROM Servicio u
     INNER JOIN TipoServicio t ON u.idTipoServicio = t.idTipoServicio;
+
+
+--------------------------------MODULO Resenna--------------------------------
+
+--SP_CrearResenna--
+-- Debe tener los siguentes parametros:
+-- -[ ] estatus
+-- -[ ] descripcion
+-- -[ ] idProducto
+-- -[ ] idUsuario
+
+CREATE OR REPLACE PROCEDURE SP_CrearResenna(
+    p_estatus IN Resenna.estatus%TYPE,
+    p_descripcion IN Resenna.descripcion%TYPE,
+    p_idProducto IN Resenna.idProducto%TYPE,
+    p_idUsuario IN Resenna.idUsuario%TYPE;
+)
+AS
+    v_idResenna Resenna.idResenna%TYPE;
+BEGIN
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    INSERT INTO Resenna(estatus, descripcion, idProducto, idUsuario) 
+    VALUES (p_estatus, p_descripcion, p_idProducto, p_idUsuario)
+    RETURNING idResenna INTO v_idResenna;
+
+    DBMS_OUTPUT.PUT_LINE('La reseña se ha creado exitosamente. ID: ' || v_idResenna || ' estatus: ' || p_estatus || ' Descripción: ' || p_descripcion || ' ID Producto: ' || p_idProducto || ' ID Usuario ' || p_idUsuario);
+    
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al crear la reseña: ' || SQLERRM);
+    END;
+END;
+
+--SP_LeerResenna (UNICO)--
+-- Debe de tener como parametro:
+-- -[ ] idResenna
+
+-- Debe de mostrar los siguientes parametros:
+-- -[ ] estatus
+-- -[ ] descripcion
+-- -[ ] idProducto
+-- -[ ] idUsuario
+
+CREATE OR REPLACE PROCEDURE SP_LeerResennaUnico(
+    p_idResenna IN NUMBER
+) AS
+    v_cuenta NUMBER;
+    v_estatus IN Resenna.estatus%TYPE;
+    v_descripcion IN Resenna.descripcion%TYPE;
+    v_idProducto IN Resenna.idProducto%TYPE;
+    v_idUsuario IN Resenna.idUsuario%TYPE;
+BEGIN
+    -- Verificar si el ID de la reseña existe
+    SELECT COUNT(*) INTO v_cuenta
+    FROM Resenna
+    WHERE idResenna = p_idResenna;
+    
+    IF v_cuenta = 0 THEN
+        -- El ID de la reseña no existe, mostrar un mensaje de error
+        DBMS_OUTPUT.PUT_LINE('Error: El ID de la reseña no existe.');
+    ELSE
+        -- El ID de la reseña existe, obtener el estatus, descripcion, idProducto y idUsuario
+        SELECT estatus, descripcion, idProducto, idUsuario INTO v_estatus, v_descripcion, v_idProducto, v_idUsuario
+        FROM Resenna
+        WHERE idResenna = p_idRresenna;
+        
+        -- Mostrar los datos de la reseña
+        DBMS_OUTPUT.PUT_LINE('ID Reseña: ' || p_idResenna || ' Estatus: ' || v_estatus || ' Descripción: ' || v_descripcion || ' ID Producto: ' || v_idProducto || ' ID Usuario: ' || v_idUsuario);
+    END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al leer la reseña: ' || SQLERRM);
+    END;
+END;
+
+--SP_EditarResenna--
+-- Debe tener los siguentes parametros:
+-- -[ ] estatus
+-- -[ ] descripcion
+-- -[ ] idProducto
+-- -[ ] idUsuario
+
+CREATE OR REPLACE PROCEDURE SP_EditarResenna
+(
+    p_idResenna IN NUMERIC,
+    p_estatus IN NUMBER,
+    p_descripcion IN VARCHAR2,
+    p_idProducto IN NUMERIC,
+    p_idUsuario IN NUMERIC,
+) AS
+BEGIN
+    --Valida ID nulo
+    IF p_idResenna IS NULL THEN
+        DBMS_OUTPUT.PUT_LINE('Error: El ID ingresado es nulo.');
+        RETURN;
+    END IF;
+
+    -- Verifica existencia de la reseña
+    DECLARE
+        cuenta NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO cuenta FROM Resenna WHERE p_idRresenna = p_idResenna;
+        
+        IF cuenta = 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Error: La reseña no existe.');
+        ELSE
+            -- Actualiza los datos de reseña
+            UPDATE Resenna SET estatus = p_estatus,
+                                descripcion = p_descripcion,
+                                idProducto = p_idProducto,
+                                idUsuario = p_idUsuario
+            WHERE idResenna = p_idResenna;
+            DBMS_OUTPUT.PUT_LINE('La reseña ha sido editada exitosamente.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al editar la reseña: ' || SQLERRM);
+    END;
+END;
+
+--SP_LeerResenna (TODOS)--
+-- Debe de mostrar los siguientes parametros de porducto:
+-- -[ ] nombre
+
+-- Debe de mostrar los siguientes parametros:
+-- -[ ] estatus
+-- -[ ] descripcion
+-- -[ ] idProducto
+-- -[ ] idUsuario
+
+CREATE OR REPLACE PROCEDURE SP_LeerResennaTodos(
+    p_idResenna IN NUMBER
+) AS
+    v_cuenta NUMBER;
+    v_estatus IN Resenna.estatus%TYPE;
+    v_descripcion IN Resenna.descripcion%TYPE;
+    v_idProducto IN Resenna.idProducto%TYPE;
+    v_idUsuario IN Resenna.idUsuario%TYPE;
+    v_nombreP IN Producto.nombre%TYPE;
+BEGIN    
+    -- El ID de la reseña existe, obtener el estatus, descripcion, idProducto y idUsuario
+    SELECT r.estatus, r.descripcion, r.idProducto, r.idUsuario, p.nombre INTO v_estatus, v_descripcion, v_idProducto, v_idUsuario, v_nombreP
+    FROM Resenna r
+    INNER JOIN Producto p ON r.idProducto = p.idProducto;
+        
+    -- Mostrar los datos de la reseña
+    DBMS_OUTPUT.PUT_LINE('ID Reseña: ' || p_idResenna || ' Estatus: ' || v_estatus || ' Descripción: ' || v_descripcion || ' ID Producto: ' || v_idProducto || ' ID Usuario: ' || v_idUsuario || ' Nombre Producto ' || v_nombreP);
+    END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            DBMS_OUTPUT.PUT_LINE('Error al leer la reseña: ' || SQLERRM);
+    END;
+END;
+
+--View_LeerResennaInactiva (TODAS)
+-- Debe de recibir como parametro de resennas:
+-- -[ ] estatus
+
+-- Debe de mostrar los siguientes parametros de porducto:
+-- -[ ] nombre
+
+-- Debe de mostrar los siguientes parametros de resennas:
+-- -[ ] estatus
+-- -[ ] descripcion
+-- -[ ] idProducto
+-- -[ ] idUsuario
+
+CREATE OR REPLACE VIEW View_LeerResennaInactiva AS
+SELECT r.estatus, r.descripcion, r.idProducto, r.idUsuario, p.nombre
+FROM Resenna r
+JOIN Producto p ON r.idProducto = p.idProducto
+WHERE r.estatus = 0;
+
+SELECT * FROM View_LeerResennaInactiva;
+
+--View_LeerResennaActiva (TODAS)
+-- Debe de recibir como parametro de resennas:
+-- -[ ] estatus
+
+-- Debe de mostrar los siguientes parametros de porducto:
+-- -[ ] nombre
+
+-- Debe de mostrar los siguientes parametros de resennas:
+-- -[ ] estatus
+-- -[ ] descripcion
+-- -[ ] idProducto
+-- -[ ] idUsuario
+
+CREATE OR REPLACE VIEW View_LeerResennaActiva AS
+SELECT r.estatus, r.descripcion, r.idProducto, r.idUsuario, p.nombre
+FROM Resenna r
+JOIN Producto p ON r.idProducto = p.idProducto
+WHERE r.estatus = 1;
+
+SELECT * FROM View_LeerResennaActiva;
+
+------------------------------FIN MODULO Resenna------------------------------
+
