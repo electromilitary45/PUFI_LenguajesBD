@@ -324,26 +324,60 @@ def editarTipoProducto():
                 desc=input("Ingrese la nueva descripcion: ")
             
             try:
-                connection=establecer_conexion()
-                cursor=connection.cursor()
-                cursor.execute("UPDATE TipoServicio SET nombre='"+nombre+"',descripcion='"+desc+"' WHERE idTipoServicio='"+str(idTipoServicio)+"'")
-                cursor.execute("commit")
+                con=establecer_conexion()
+                if con is None:
+                    print("No se logró establecer la conexión con la base de datos")
+                else:
+                    cursor=con.cursor()
+                    cursor.callproc("DBMS_OUTPUT.ENABLE")
+                    cursor.callproc("SP_EditarTipoServicio",[idTipoServicio,nombre,desc])
+                    # Recuperar los mensajes de salida
+                    status_var = cursor.var(cx_Oracle.NUMBER)
+                    line_var = cursor.var(cx_Oracle.STRING)
+                    while True:
+                        cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                        if status_var.getvalue() != 0:
+                            break
+                        print(line_var.getvalue())
+                    con.commit()
             except Exception as ex:
                 print(ex)
             finally:
-                if connection:
-                    connection.close()
-                    print("Tipo de servicio editado con éxito")
-                    
+                if con:
+                    con.close()
     else:
         print("Tipo de servicio no encontrado")
+# editarTipoProducto()
 
 def eliminarTipoProducto():
-    print("EN DESARRROLLO")
+    vistaTipoServicio()
+    op=""
+    while op=="":
+        op=input("Ingrese el id del tipo de servicio a eliminar: ")
+    
+    try:
+        con=establecer_conexion()
+        cursor=con.cursor()
+        cursor.callproc("DBMS_OUTPUT.ENABLE")
+        cursor.callproc("SP_EliminarTipoServicio",[str(op)])
+        #recuperar los mensajes de salida
+        status_var = cursor.var(cx_Oracle.NUMBER)
+        line_var = cursor.var(cx_Oracle.STRING)
+        while True:
+            cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+            if status_var.getvalue() != 0:
+                break
+            print(line_var.getvalue())
+        con.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# eliminarTipoProducto()
 
 #-------------------------MODULO SERVICIOS-------------------------
 def InsertServicio():
-    print ("EN DESARROLLO")
     nombre=""
     while(nombre==""):
         nombre=input("Ingrese el nombre del servicio: ")
@@ -417,7 +451,10 @@ def verServicioEspecifico():
     print("EN DESARRROLLO")
 
 def editarServicio():
-    print("EN DESARRROLLO")
+    vistaServicios()
+    
+    idTipoServicio=""
+    dTipoServicio=[]
 
 def eliminarServicio():
     print("EN DESARRROLLO")
