@@ -561,7 +561,33 @@ def editarServicio():
 # editarServicio()
 
 def eliminarServicio():
-    print("EN DESARRROLLO")
+    vistaServicios()
+    
+    op=""
+    while op=="":
+        op=input("Ingrese el id del servicio a eliminar o 'S' para SALIR:")
+    
+    if op.upper()!="S":
+        try:
+            con=establecer_conexion()
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_EliminarServicio",[str(op)])
+            #recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+        except Exception as ex:
+            print(ex)
+        finally:
+            if con:
+                con.close()
+# eliminarServicio()
 
 def verServiciosPorTipo():
     print("EN DESARRROLLO")
@@ -604,15 +630,17 @@ def menu_tipoServicios():
 def menu_servicios():
     op=""
     while op!="0":
-        print("***************** MENU DE SERVICIOS *****************\n"
-              "1. CREAR SERVICIO\n"
-              "2. VER SERVICIOS\n"
-              "3. VER SERVICIO ESPECIFICO\n"
-              "4. EDITAR SERVICIO\n"
-              "5. ELIMINAR SERVICIO\n"
-              "6. VER SERVICIOS POR TIPO\n"
-              "0. SALIR\n"
-        )
+        print(
+                "***************** MENU DE SERVICIOS *****************\n"
+                "1. CREAR SERVICIO\n"
+                "2. VER SERVICIOS\n"
+                "3. VER SERVICIO ESPECIFICO\n"
+                "4. EDITAR SERVICIO\n"
+                "5. ELIMINAR SERVICIO\n"
+                "6. VER SERVICIOS POR TIPO\n"
+                "0. SALIR\n"
+            )
+        
         op=input("Ingrese una opción: ")
         if op=="1":
             InsertServicio()

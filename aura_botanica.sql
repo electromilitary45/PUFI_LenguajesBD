@@ -617,7 +617,7 @@ END;
 
 
 
--------------\-------------------MODULO SERVICIO-----------------\---------------
+-\------------\---------\----------MODULO SERVICIO------\-----------\-------------\--
 
 -----Sp_INSERTAR SERVICIO----
 CREATE OR REPLACE PROCEDURE SP_CrearServicio(
@@ -722,7 +722,40 @@ BEGIN
     END IF;
 END;
 
---------------------------------MODULO Resenna--------------------------------
+CREATE OR REPLACE PROCEDURE SP_EliminarServicio(
+    p_idServicio IN Servicio.idServicio%TYPE
+) AS
+    v_idServicio Servicio.idServicio%TYPE;
+    v_idServicioComprobacion Servicio.idServicio%TYPE;
+    v_cantidadServiciosUsuario NUMBER;
+BEGIN
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    --VALIDAR QUE EXISTA UN SERVICIO CON EL MISMO ID
+    BEGIN
+        SELECT idServicio INTO v_idServicioComprobacion FROM Servicio WHERE idServicio = p_idServicio;
+    END;
+
+    BEGIN 
+        --VALIDAR QUE NO EXISTAN SERVICIOS ASOCIADOS A UN USUARIO
+        SELECT COUNT(*) INTO v_cantidadServiciosUsuario FROM ServicioUsuario WHERE idServicio = p_idServicio;
+    END;
+
+    if v_idServicioComprobacion is not null THEN
+        if v_cantidadServiciosUsuario > 0 THEN
+            DBMS_OUTPUT.PUT_LINE('Error: No se puede eliminar el servicio porque existen usuarios asociados a él.');
+        ELSE
+            DELETE FROM Servicio WHERE idServicio = p_idServicio;
+            DBMS_OUTPUT.PUT_LINE('Servicio eliminado con éxito.');
+        END IF;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Error: El servicio no existe.');
+    END IF;
+
+END;
+
+-------------------------------MODULO Resenna--------------------------------
 
 --SP_CrearResenna--
 -- Debe tener los siguentes parametros:
