@@ -617,7 +617,7 @@ END;
 
 
 
--\------------\---------\----------MODULO SERVICIO------\-----------\-------------\--
+-------------\---------\----------MODULO SERVICIO------\-----------\-------------\--
 
 -----Sp_INSERTAR SERVICIO----
 CREATE OR REPLACE PROCEDURE SP_CrearServicio(
@@ -754,8 +754,59 @@ BEGIN
     END IF;
 
 END;
+-------------------------verServicioPorTipo----------------------
+CREATE OR REPLACE PROCEDURE SP_verServiciosTipo(
+    p_idTipoServicio IN Servicio.idTipoServicio%TYPE
+) AS
+    v_idTipoServicio Servicio.idTipoServicio%TYPE;
+    v_idTipoServicioComprobacion Servicio.idTipoServicio%TYPE;
+    v_idServicio Servicio.idServicio%TYPE;
+    v_nombre Servicio.nombre%TYPE;
+    v_descripcion Servicio.descripcion%TYPE;
+    v_cupos Servicio.cupos%TYPE;
+    v_estatus Servicio.estatus%TYPE;
+    v_fecha Servicio.fecha%TYPE;
+    v_nombreTipoServicio tiposervicio.nombre%TYPE;
 
--------------------------------MODULO Resenna--------------------------------
+    -- Declarar el cursor explícito
+    CURSOR c_servicios IS
+        SELECT s.idServicio, s.nombre, s.descripcion, s.cupos, s.estatus, s.fecha, t.nombre AS nombreTipoServicio
+        FROM Servicio s
+        JOIN TipoServicio t ON s.idTipoServicio = t.idTipoServicio
+        WHERE t.idTipoServicio = p_idTipoServicio;
+BEGIN
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    --VALIDAR QUE EXISTA UN TIPO DE SERVICIO CON EL MISMO ID
+    BEGIN
+        SELECT idTipoServicio INTO v_idTipoServicioComprobacion FROM TipoServicio WHERE idTipoServicio = p_idTipoServicio;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            v_idTipoServicioComprobacion := NULL;
+    END;
+
+    IF v_idTipoServicioComprobacion IS NOT NULL THEN
+        -- Abrir el cursor explícito
+        OPEN c_servicios;
+
+        -- Recorrer los resultados del cursor y mostrarlos
+        LOOP
+            FETCH c_servicios INTO v_idServicio, v_nombre, v_descripcion, v_cupos, v_estatus, v_fecha, v_nombreTipoServicio;
+            EXIT WHEN c_servicios%NOTFOUND;
+
+            -- Devolver todos los datos
+            DBMS_OUTPUT.PUT_LINE('ID Servicio: ' || v_idServicio || ' Nombre: ' || v_nombre || ' Descripción: ' || v_descripcion || ' Cupos: ' || v_cupos || ' Estatus: ' || v_estatus || ' Fecha: ' || v_fecha || ' Tipo de Servicio: ' || v_nombreTipoServicio);
+        END LOOP;
+
+        -- Cerrar el cursor explícito
+        CLOSE c_servicios;
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('Error: El tipo de servicio no existe.');
+    END IF;
+END;
+
+----\---------\-----------\-------MODULO Resenna-------\------\--------------\-----
 
 --SP_CrearResenna--
 -- Debe tener los siguentes parametros:

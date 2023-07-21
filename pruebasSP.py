@@ -442,7 +442,7 @@ def InsertServicio():
     finally:
         if con:
             con.close()
-# InsertServicio
+# InsertServicio()
 
 def vistaServicios():
     try:
@@ -470,11 +470,10 @@ def vistaServicios():
     finally:
         if con:
             con.close()
-# vistaServicios
+# vistaServicios()
 
 def verServicioEspecifico():
     print("EN DESARRROLLO")
-
 
 def editarServicio():
     vistaServicios()
@@ -590,8 +589,34 @@ def eliminarServicio():
 # eliminarServicio()
 
 def verServiciosPorTipo():
-    print("EN DESARRROLLO")
-
+    vistaTipoServicio()
+    idTipoServicio=""
+    while idTipoServicio=="":
+        idTipoServicio=input("Ingrese el id del tipo de servicio: ")
+    
+    try:
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos")
+        else:
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_verServiciosTipo",[str(idTipoServicio)])
+            # Recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# verServiciosPorTipo()
 
 
 
@@ -654,7 +679,6 @@ def menu_servicios():
             eliminarServicio()
         elif op=="6":
             verServiciosPorTipo()
-
 
 def menu_tipoProductos():
     print("EN DESARRROLLO")
