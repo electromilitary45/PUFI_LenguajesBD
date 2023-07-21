@@ -377,6 +377,29 @@ def eliminarTipoProducto():
 # eliminarTipoProducto()
 
 #-------------------------MODULO SERVICIOS-------------------------
+def EncServicioID(idServicio):
+    try:
+        connection=establecer_conexion()
+        
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM Servicio WHERE idServicio='"+str(idServicio)+"'")
+        results = cursor.fetchall()
+        encontrado=False
+        dServicio=[]
+        for row in results:
+            if (str(row[0])==idServicio):
+                dServicio=row
+                encontrado=True
+                break
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
+    
+    return encontrado,dServicio
+
 def InsertServicio():
     nombre=""
     while(nombre==""):
@@ -419,6 +442,7 @@ def InsertServicio():
     finally:
         if con:
             con.close()
+# InsertServicio
 
 def vistaServicios():
     try:
@@ -446,15 +470,95 @@ def vistaServicios():
     finally:
         if con:
             con.close()
+# vistaServicios
 
 def verServicioEspecifico():
     print("EN DESARRROLLO")
 
+
 def editarServicio():
     vistaServicios()
     
-    idTipoServicio=""
-    dTipoServicio=[]
+    idServicio=""
+    dServicio=[]
+    
+    while(idServicio==""):
+        idServicio=input("Ingrese el id del servicio a actualizar: ")
+        
+    (encontrado,dServicio)=EncServicioID(idServicio)
+    if encontrado:
+        idServicio=dServicio[0]
+        nombre=dServicio[1]
+        desc=dServicio[3]
+        cupos=dServicio[4]
+        estatus=dServicio[5]
+        fecha=dServicio[6].strftime("%d/%b/%Y")
+        idTipoServicio=dServicio[7]
+        (encontrado,dTipoServicio)=EncTipoServicioID(idTipoServicio)
+        nombreTipoServicio=dTipoServicio[1]
+        
+        op=""
+        while op!="0":
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: ("+nombre+")\n"
+                "2. Descripcion: ("+desc+")\n"
+                "3. Cupos: ("+str(cupos)+")\n"
+                "4. Estatus: ("+str(estatus)+")\n"
+                "5. Fecha: ("+fecha+")\n"
+                "6. Tipo de Servicio: ("+str(idTipoServicio)+"-"+nombreTipoServicio+")\n"
+                "0. Salir"
+            )
+            op=input("Ingrese una opción: ")
+            
+            if op=="1":
+                nombre=input("Ingrese el nuevo nombre: (anterior: "+nombre+")")
+            elif op=="2":
+                desc=input("Ingrese la nueva descripcion: (anterior: "+desc+")")
+            elif op=="3":
+                cupos=input("Ingrese el nuevo numero de cupos: (anterior: "+str(cupos)+")")
+            elif op=="4":
+                tipoEstatus=""
+                if estatus==1:
+                    tipoEstatus="Activo"
+                else:
+                    tipoEstatus="Inactivo"
+                    
+                estatus=input("Ingrese el nuevo estatus: (anterior: "+tipoEstatus+"\n)"
+                            "1. Activo\n"
+                            "0. Inactivo\n")
+            elif op=="5":
+                fecha=input("Ingrese la nueva fecha: (anterior: "+fecha+") (dd/mmm/yyyy) (ejemplo 01/jan/2011): ")
+                
+            elif op=="6":
+                vistaTipoServicio()
+                (encontrado,dTipoServicio)=EncTipoServicioID(idTipoServicio)
+                nombreTipoServicio=dTipoServicio[1]
+                idTipoServicio=input("Ingrese el nuevo id del tipo de servicio: (anterior: "+str(idTipoServicio)+")")
+            
+            try:
+                con=establecer_conexion()
+                if con is None:
+                    print("No se logró establecer la conexión con la base de datos")
+                else:
+                    cursor=con.cursor()
+                    cursor.callproc("DBMS_OUTPUT.ENABLE")
+                    cursor.callproc("SP_EditarServicio",[str(idServicio),nombre,desc,str(cupos),str(estatus),fecha,str(idTipoServicio)])
+                    # Recuperar los mensajes de salida
+                    status_var = cursor.var(cx_Oracle.NUMBER)
+                    line_var = cursor.var(cx_Oracle.STRING)
+                    while True:
+                        cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                        if status_var.getvalue() != 0:
+                            break
+                        print(line_var.getvalue())
+                    con.commit()
+            except Exception as ex:
+                print(ex)
+            finally:
+                if con:
+                    con.close()
+# editarServicio()
 
 def eliminarServicio():
     print("EN DESARRROLLO")
