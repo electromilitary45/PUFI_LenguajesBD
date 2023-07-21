@@ -1137,8 +1137,7 @@ END;
 CREATE OR REPLACE VIEW View_LeerDireccionTodos AS
 SELECT d.idUsuario, d.idDireccion, d.provincia, d.canton, d.distrito, d.codPostal, d.senalesExactas, u.nombre, u.primApellido, u.segApellido
 FROM Direccion d
-JOIN Usuario u ON d.idUsuario = u.idUsuario
-WHERE u.idUsuario = p_idUsuario;
+JOIN Usuario u ON d.idUsuario = u.idUsuario;
 
 SELECT * FROM View_LeerDireccionTodos;
 
