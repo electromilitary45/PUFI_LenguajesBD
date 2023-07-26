@@ -17,29 +17,67 @@ def establecer_conexion():
         return None
 
 # ------------------ MUDLO ROLES ------------------ #
+def rolesDatos(p_idRol):
+    try:
+        connection = establecer_conexion()
+        cursor = connection.cursor()
+
+        # Habilitar el DBMS_OUTPUT para capturar los mensajes del SP
+        cursor.callproc("DBMS_OUTPUT.ENABLE")
+
+        # Ejecutar el SP con el parámetro de entrada
+        cursor.callproc("SP_LeerRol", [p_idRol])
+
+        # Recuperar los mensajes de DBMS_OUTPUT del SP
+        message = cursor.var(cx_Oracle.STRING)
+        status = cursor.var(cx_Oracle.NUMBER)
+        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+        while status.getvalue() == 0:
+            print(message.getvalue())
+            cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+
+def rolesCant():
+    try:
+        connection = establecer_conexion()
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT COUNT(*) FROM InfoRoles")
+        result = cursor.fetchone()
+        role_count = result[0]
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+    return role_count
+
 def InsertRol():
     # ---- Nombre rol
     nombreRol = ""
     while nombreRol == "":
         nombreRol = input("Ingrese el nombre del rol: ")
-    
+
     try:
-        # Establecer la conexión a la base de datos
         connection = establecer_conexion()
-        if connection is None:
-            return print('No se logró establecer la conexión con la base de datos en el proceso de inserción')
-        
         ##coneccion 
         cursor = connection.cursor()
 
-        # Habilitar la captura de mensajes de salida
+        ## Habilitar el DBMS_OUTPUT para capturar los mensajes del trigger
         cursor.callproc("DBMS_OUTPUT.ENABLE")
 
-        # execute de un sp
+        ## Ejecutar el SP para crear el rol
         cursor.callproc("SP_CrearRol", [nombreRol])
 
-        
-        # Recuperar los mensajes de DBMS_OUTPUT
+        ## Recuperar el mensaje de salida del SP (y también del trigger)
         message = cursor.var(cx_Oracle.STRING)
         status = cursor.var(cx_Oracle.NUMBER)
         cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
@@ -47,87 +85,156 @@ def InsertRol():
             print(message.getvalue())
             cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
 
-        ## commit
-        cursor.execute("commit")
-        
+        ## Commit después de ejecutar el SP 
+        connection.commit()
+
     except Exception as ex:
         print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+            print("Rol insertado con éxito")
+
+def VerRoles():
+    try:
+        connection = establecer_conexion()
+        cursor = connection.cursor()
+
+        ## sentencia de select de rol desde la vista
+        cursor.execute("SELECT * FROM InfoRoles")
+
+        results = cursor.fetchall()
+
+        print("Roles disponibles:")
+        for row in results:
+            print(row)
+
+        return results
+
+    except Exception as ex:
+        print(ex)
+
+def EditarRol():
+    try:
+        # Traer y mostrar los datos de los roles
+        roles = VerRoles()
+
+        # Pedir al usuario seleccionar un número de rol para editar o 'S' para cancelar
+        op = input("\nSeleccione el # de rol que desea editar o 'S' para cancelar: ")
+
+        # Si no cancela la operación
+        if op != "S":
+            # Buscar el rol por ID
+            idRol = int(op)
+            encontrado = False
+            for row in roles:
+                if idRol == row[0]:
+                    encontrado = True
+                    nombreRol = row[1]
+                    break
+
+            # Si encuentra el rol
+            if encontrado:
+                print("\nRol seleccionado:", nombreRol)
+
+                # Pedir el nuevo nombre del rol
+                nombreNuevoRol = input("Ingrese el nuevo nombre del rol: ")
+
+                # Si no está vacío, aplicar el SP para editar el rol
+                if nombreNuevoRol.strip() != "":
+                    connection = establecer_conexion()
+                    cursor = connection.cursor()
+
+                    # Habilitar el DBMS_OUTPUT para capturar los mensajes del trigger
+                    cursor.callproc("DBMS_OUTPUT.ENABLE")
+
+                    # Ejecutar el SP con los parámetros de entrada
+                    cursor.callproc("SP_EditarRol", [idRol, nombreNuevoRol])
+
+                    # Recuperar los mensajes de DBMS_OUTPUT (también del trigger)
+                    message = cursor.var(cx_Oracle.STRING)
+                    status = cursor.var(cx_Oracle.NUMBER)
+                    cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+                    while status.getvalue() == 0:
+                        print(message.getvalue())
+                        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+
+                    # Realizar el commit si no hay mensajes de error
+                    connection.commit()
+
+            # Si no encuentra el rol
+            else:
+                print("ID de rol incorrecto")
+
+        # Si cancela la operación
+        else:
+            print("Operación cancelada")
+
+    except Exception as ex:
+        print(ex)
+
     finally:
         if connection:
             connection.close()
 
-def vistaRoles():
-    idRol=[]
-    nombre=[]
-
+def EliminarRol():
     try:
-        # Establecer la conexión a la base de datos
-        connection = establecer_conexion()
-        if connection is None:
-            return idRol, nombre
+        # Traer y mostrar los datos de los roles
+        roles = VerRoles()
 
-        cursor=connection.cursor()
+        # Pedir al usuario seleccionar un número de rol para eliminar o 'S' para cancelar
+        op = input("\nSeleccione el # de rol que desea eliminar o 'S' para cancelar: ")
 
-        cursor.execute("SELECT * FROM InfoRoles")
-        results = cursor.fetchall()
+        # Si no cancela la operación
+        if op != "S":
+            # Buscar el rol por ID
+            idRol = int(op)
+            encontrado = False
+            for row in roles:
+                if idRol == row[0]:
+                    encontrado = True
+                    nombreRol = row[1]
+                    break
 
-        
-        for row in results:
-            idRol.append(row[0])
-            nombre.append(row[1])
+            # Si encuentra el rol
+            if encontrado:
+                print("\nRol seleccionado:", nombreRol)
 
+                # Llama al SP para eliminar el rol
+                connection = conexion()
+                cursor = connection.cursor()
+
+                # Habilitar el DBMS_OUTPUT para capturar los mensajes del SP
+                cursor.callproc("DBMS_OUTPUT.ENABLE")
+
+                # Ejecutar el SP con los parámetros de entrada y salida
+                output_msg = cursor.var(cx_Oracle.STRING)
+                cursor.callproc("SP_EliminarRol", [idRol, output_msg])
+
+                # Recuperar el mensaje de salida del SP
+                mensaje_salida = output_msg.getvalue()
+
+                # Realizar el commit si no hay mensajes de error
+                if mensaje_salida == "El rol ha sido eliminado exitosamente.":
+                    connection.commit()
+
+                print(mensaje_salida)
+
+            # Si no encuentra el rol
+            else:
+                print("ID de rol incorrecto")
+
+        # Si cancela la operación
+        else:
+            print("Operación cancelada")
 
     except Exception as ex:
-        print('Error al obtener los registros:',ex)
+        print(ex)
 
     finally:
-        cursor.close()
-        connection.close()
-
-    return idRol, nombre
-
-def editar_rol(id_rol, nuevo_nombre):
-    # Establecer la conexión a la base de datos
-    connection = establecer_conexion()
-    if connection is None:
-        return id_rol,nuevo_nombre
-    try:
-        cursor=connection.cursor()
-
-        # Habilitar la salida de DBMS_OUTPUT
-        cursor.callproc('DBMS_OUTPUT.ENABLE')
-        
-        cursor.callproc('SP_EditarRol',[id_rol,nuevo_nombre])
-
-        # Recuperar los mensajes de DBMS_OUTPUT
-        message = cursor.var(cx_Oracle.STRING)
-        status = cursor.var(cx_Oracle.NUMBER)
-        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
-        while status.getvalue() == 0:
-            print(message.getvalue())
-            cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
-
-        connection.commit()
-
-    except cx_Oracle.Error as error:
-        print('Error al ejecutar el procedimiento para editar roles: ',error)
-    
-    finally:
-        # Cerrar el cursor y la conexión
-        cursor.close()
-        connection.close()
-
-
-#PRUEBAS
-##InsertRol()
-
-##Prueba vista roles
-# Llamar a la función y obtener los vectores de resultados
-#idRol_result, nombre_result = vistaRoles()
-
-# Imprimir los vectores
-#print("ID Rol:", idRol_result)
-#print("Nombre:", nombre_result)
+        if connection:
+            connection.close()
 
 def solicitar_id_rol():
     while True:
@@ -166,6 +273,309 @@ def menu_editar_roles():
         nuevo_nombre = input("\nIngrese el nuevo nombre para el rol: ")
         editar_rol(id_rol_a_editar, nuevo_nombre)
 
+#--------------------MODULO USUARIOS--------------------#
+def EncUsuarioID(idUsuario):
+    encontrado = False
+    dUsuario = []
+
+    try:
+        connection = establecer_conexion()
+        cursor = connection.cursor()
+
+        # Crear un objeto de tipo cursor para el resultado del SP
+        result_cursor = cursor.var(cx_Oracle.CURSOR)
+
+        # Ejecutar el SP para obtener el usuario por ID
+        cursor.callproc("SP_ObtenerUsuarioPorID", [idUsuario, result_cursor])
+
+        # Obtener el resultado del SP del cursor
+        result_set = result_cursor.getvalue()
+
+        # Verificar si se encontró el usuario
+        for row in result_set:
+            if str(row[0]) == idUsuario:
+                dUsuario = row
+                encontrado = True
+                break
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+
+    return encontrado, dUsuario
+
+def VerUsuarios():
+    try:
+        connection=establecer_conexion()
+        ##print(connection.version)
+        cursor=connection.cursor()
+
+        cursor.execute("SELECT * FROM usuario")
+        results = cursor.fetchall()
+
+        print("Número de filas recuperadas:", len(results))
+        for row in results:
+            print(row)
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+
+def InsertUsuario():
+    # DATOS DE USUARIO
+    nombre = ""
+    while nombre == "":
+        nombre = input("Ingrese su nombre: ")
+    # ---- APELLIDO 1
+    apellido1 = ""
+    while apellido1 == "":
+        apellido1 = input("Ingrese su Primer Apellido: ")
+    # ---- APELLIDO 2
+    apellido2 = ""
+    while apellido2 == "":
+        apellido2 = input("Ingrese su Segundo Apellido: ")
+    # ---- CEDULA
+    cedula = ""
+    while cedula == "":
+        cedula = input("Ingrese su cédula: ")
+    # ---- CORREO
+    correo = ""
+    while correo == "":
+        correo = input("Ingrese su correo: ")
+    contrasenna = input("Ingrese su contraseña: ")
+    # ---- ROL
+    idRol = ""
+    encontrado = False
+    while not encontrado and idRol == "":
+        usuarios = VerRoles()
+
+        u = ""
+        for u in usuarios:
+            u = str(u) + "\n"
+
+        idRol = input("Ingrese su rol: \n" + u + "\n")
+
+        for i in usuarios:
+            if str(i[0]) == idRol:
+                encontrado = True
+                idRol = i[0]
+                break
+
+        if not encontrado:
+            print("Rol no encontrado\nReintente nuevamente")
+
+
+    try:
+        connection = establecer_conexion()
+        ##coneccion 
+        cursor = connection.cursor()
+
+        # Recuperar los mensajes de DBMS_OUTPUT
+        message = cursor.var(cx_Oracle.STRING)
+        status = cursor.var(cx_Oracle.NUMBER)
+        # Llamada al SP para crear el usuario
+        cursor.callproc("SP_CrearUsuario", [nombre, apellido1, apellido2, cedula, correo, contrasenna, idRol])
+        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+        while status.getvalue() == 0:
+            print(message.getvalue())
+            cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+
+        cursor.execute("commit")
+        print("Usuario creado con éxito")
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+
+def VerUsuarioEspecifico():
+    op = ""
+    id = ""
+    nombre = ""
+    Apellido1 = ""
+    Apellido2 = ""
+    Cedula = ""
+    Correo = ""
+
+    while op == "":
+        op = input("Con cual dato quiere buscar el usuario:"
+                   "\n1. ID"
+                   "\n2. Nombre"
+                   "\n3. Apellido1"
+                   "\n4. Apellido2"
+                   "\n5. Cedula"
+                   "\n6. Correo"
+                   "\n7. Salir"
+                   )
+
+        if op == "1":
+            id = input("Ingrese el id del usuario: ")
+        elif op == "2":
+            nombre = input("Ingrese el nombre del usuario: ")
+        elif op == "3":
+            Apellido1 = input("Ingrese el primer apellido del usuario: ")
+        elif op == "4":
+            Apellido2 = input("Ingrese el segundo apellido del usuario: ")
+        elif op == "5":
+            Cedula = input("Ingrese la cedula del usuario: ")
+        elif op == "6":
+            Correo = input("Ingrese el correo del usuario: ")
+
+    try:
+        connection = establecer_conexion()
+        cursor = connection.cursor()
+
+        # SELECT para buscar el usuario según el atributo proporcionado
+        query = "SELECT idUsuario, nombre, primApellido, segApellido, cedula, correo FROM usuario WHERE"
+
+        if op == "1":
+            query += " idUsuario = :idUsuario"
+        elif op == "2":
+            query += " nombre = :nombreUsuario"
+        elif op == "3":
+            query += " primApellido = :apellido1"
+        elif op == "4":
+            query += " segApellido = :apellido2"
+        elif op == "5":
+            query += " cedula = :cedulaUsuario"
+        elif op == "6":
+            query += " correo = :correoUsuario"
+        else:
+            return
+
+        # Ejecutar la consulta SQL con los parámetros correspondientes
+        cursor.execute(query, idUsuario=id, nombreUsuario=nombre, apellido1=Apellido1,
+                       apellido2=Apellido2, cedulaUsuario=Cedula, correoUsuario=Correo)
+
+        results = cursor.fetchall()
+
+        for row in results:
+            print(row)
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+
+def ActualizarUsuario():
+    print("********USUARIOS*********")
+    VerUsuarios()
+    print("*************************")
+    
+    # Pide el id del usuario a actualizar
+    idUsuario = ""
+    while idUsuario == "":
+        idUsuario = input("Ingrese el id del usuario a actualizar: ")
+        
+    # Se busca el usuario por id
+    (encontrado, dUsuario) = EncUsuarioID(idUsuario)
+    
+    if encontrado:
+        idUsuario = dUsuario[0]
+        nombre = dUsuario[1]
+        primApellido = dUsuario[2]
+        segApellido = dUsuario[3]
+        cedula = dUsuario[4]
+        correo = dUsuario[5]
+        contrasenna = dUsuario[6]
+        idRol = dUsuario[7]
+        idDireccion = dUsuario[8]
+
+        nombre2 = ""
+        primApellido2 = ""
+        segApellido2 = ""
+        cedula2 = ""
+        correo2 = ""
+        contrasenna2 = ""
+        idRol2 = ""
+        idDireccion2 = ""
+        
+        op = ""
+        while str(op) != "0":
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: (" + nombre + ")\n"
+                "2. Primer Apellido: (" + primApellido + ")\n"
+                "3. Segundo Apellido: (" + segApellido + ")\n"
+                "4. Cedula: (" + str(cedula) + ")\n"
+                "5. Correo: (" + correo + ")\n"
+                "6. Contraseña: (" + contrasenna + ")\n"
+                "7. Rol: (" + str(idRol) + ")\n"
+                "8. Direccion: (" + str(idDireccion) + ")\n"
+                "0. Salir"
+            )
+            op = input("Ingrese una opción: ")
+            
+            if op == "1":
+                nombre = input("Ingrese el nuevo nombre: ")
+            elif op == "2":
+                primApellido = input("Ingrese el nuevo primer apellido: ")
+            elif op == "3":
+                segApellido = input("Ingrese el nuevo segundo apellido: ")
+            elif op == "4":
+                cedula = input("Ingrese la nueva cedula: ")
+            elif op == "5":
+                correo = input("Ingrese el nuevo correo: ")
+            elif op == "6":
+                contrasenna = input("Ingrese la nueva contraseña: ")
+            elif op == "7":
+                VerRoles()
+                idRol = input("Ingrese el nuevo rol: ")
+
+        try:
+            connection = establecer_conexion()
+            cursor = connection.cursor()
+
+            # Recuperar los mensajes de DBMS_OUTPUT
+            message = cursor.var(cx_Oracle.STRING)
+            status = cursor.var(cx_Oracle.NUMBER)
+            cursor.callproc("SP_EditarUsr", [idUsuario, nombre, primApellido, segApellido, cedula, correo,
+                                             contrasenna, idRol, idDireccion])
+            cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+            while status.getvalue() == 0:
+                print(message.getvalue())
+                cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+
+            cursor.execute("commit")
+            
+        except Exception as ex:
+            print(ex)
+        finally:
+            if connection:
+                connection.close()
+
+    else:
+        print("Usuario no encontrado")
+
+def VerUsuariosRol(idRol):
+    try:
+        connection = establecer_conexion()
+        cursor = connection.cursor()
+
+        cursor.execute("SELECT * FROM V_UsuariosConRol WHERE \"ID Rol\"='" + str(idRol) + "'")
+        results = cursor.fetchall()
+        usuarios = []
+
+        for row in results:
+            usuarios.append(row)
+
+    except Exception as ex:
+        print(ex)
+
+    finally:
+        if connection:
+            connection.close()
+    return usuarios
 #---------------------MODULO TIPO SERVICIOS---------------------
 def tipoServicioDatos():
     try:

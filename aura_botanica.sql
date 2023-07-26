@@ -131,7 +131,7 @@ DROP TABLE compraProducto CASCADE CONSTRAINTS;
 
 --Creación de procedimientos 
 
---MODULO ROL--
+-----------/----------------/-----------\MODULO ROL--/-----------------\-------------\------------\
 
 --1
 --Debe Crear un procedimiento que reciba como parametros:
@@ -338,7 +338,38 @@ END;
             DBMS_OUTPUT.PUT_LINE('Error al obtener los usuarios por rol: ' || SQLERRM);
     END;
 
+CREATE OR REPLACE PROCEDURE SP_EliminarRol
+(
+    p_idRol IN NUMBER,
+    p_msg OUT VARCHAR2
+) AS
+BEGIN
+    --Valida ID nulo
+    IF p_idRol IS NULL THEN
+        p_msg := 'Error: El ID ingresado es nulo.';
+        RETURN;
+    END IF;
 
+    -- Verifica existencia del rol
+    DECLARE
+        cuenta NUMBER;
+    BEGIN
+        SELECT COUNT(*) INTO cuenta FROM Rol WHERE idRol = p_idRol;
+        
+        IF cuenta = 0 THEN
+            p_msg := 'Error: El rol no existe.';
+        ELSE
+            -- Elimina el rol
+            DELETE FROM Rol WHERE idRol = p_idRol;
+            p_msg := 'El rol ha sido eliminado exitosamente.';
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            p_msg := 'Error al eliminar el rol: ' || SQLERRM;
+    END;
+END;
+
+------------------------\---------------\-----------USUARIOS----------------\--------------------------\
 --(USUARIO) SP_CrearUsuario #7
 
 --Debe Crear un procedimiento que reciba como parametros:
@@ -400,14 +431,14 @@ END;
 
 --(Usuario) View UsuariosPorRol #8
 
---Vista UsuariosxRol
+----------------Vista UsuariosxRol------------------
 CREATE OR REPLACE VIEW V_UsuariosConRol AS
 SELECT u.idUsuario "ID Usuario", u.nombre "Nombre", u.primApellido "Primer Apellido", u.segApellido "Segundo Apellido", u.cedula "Cédula", u.correo "Correo", u.contrasenna "Contraseña", r.nombre AS "Rol"
 FROM Usuario u
 INNER JOIN Rol r ON u.idRol = r.idRol;
 
 
---(USUARIO) Editar Usuario#9
+-----------------(USUARIO) Editar Usuario#9---------------------------
 --Debe recibir como parametros
 --[ ] idUsuario
 --[ ] nombre
@@ -486,6 +517,18 @@ DECLARE
 BEGIN
     SP_EditarUsr(v_idUsr,v_nombre, v_primApellido, v_segApellido, v_cedula, v_correo, v_contrasenna, v_idRol, v_idDireccion);
 END;
+
+-------------------\obtner usuario por id------------------\
+CREATE OR REPLACE PROCEDURE SP_ObtenerUsuarioPorID
+(
+    p_idUsuario IN NUMBER,
+    p_cursor OUT SYS_REFCURSOR
+) AS
+BEGIN
+    OPEN p_cursor FOR
+        SELECT * FROM usuario WHERE idUsuario = p_idUsuario;
+END;
+
 
 --------------------------------MODULO TIPO SERVICIO--------------------------------
 
