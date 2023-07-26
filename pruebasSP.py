@@ -248,7 +248,7 @@ def solicitar_id_rol():
 
 def menu_editar_roles():
     # Obtener los registros de la vista InfoRoles
-    idRol_array, nombre_array = vistaRoles()
+    idRol_array, nombre_array = VerRoles()
 
     print('\n**********************************************************')
     print('*************** MODULO ROLES - EDITAR ROL ***************')
@@ -271,8 +271,10 @@ def menu_editar_roles():
     # Verificar si el ID del rol ingresado existe en los registros obtenidos
     if id_rol_a_editar in idRol_array:
         nuevo_nombre = input("\nIngrese el nuevo nombre para el rol: ")
-        editar_rol(id_rol_a_editar, nuevo_nombre)
+        EditarRol(id_rol_a_editar, nuevo_nombre)
 
+def verRolEspecifico():
+    print("EN DESARRROLLO")
 #--------------------MODULO USUARIOS--------------------#
 def EncUsuarioID(idUsuario):
     encontrado = False
@@ -576,6 +578,7 @@ def VerUsuariosRol(idRol):
         if connection:
             connection.close()
     return usuarios
+
 #---------------------MODULO TIPO SERVICIOS---------------------
 def tipoServicioDatos():
     try:
@@ -698,7 +701,7 @@ def verTipoProductoEspecifico():
     # try:
     print("EN DESARRROLLO")
 
-def editarTipoProducto():
+def editarTipoServicio():
     vistaTipoServicio()
     
     #pide el id del tipo de producto a actualizar
@@ -759,7 +762,7 @@ def editarTipoProducto():
         print("Tipo de servicio no encontrado")
 # editarTipoProducto()
 
-def eliminarTipoProducto():
+def eliminarTipoServicio():
     vistaTipoServicio()
     op=""
     while op=="":
@@ -1028,11 +1031,483 @@ def verServiciosPorTipo():
             con.close()
 # verServiciosPorTipo()
 
+#-------------------------MODULO TIPO PRODUCTOS-------------------------
+def tipoProductoDatos():
+    try:
+        connection=establecer_conexion()
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoProducto")
+        results = cursor.fetchall()
+        tipoProducto=[]
+        
+        for row in results:
+            tipoProducto.append(row)
+            
+    except Exception as ex:
+        print(ex)
+        
+    finally:
+        if connection:
+            connection.close()
+    return tipoProducto
+
+def EncTipoProductoID(idTipoProducto):
+    try:
+        connection=establecer_conexion()
+        
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM TipoProducto WHERE idTipoProducto='"+str(idTipoProducto)+"'")
+        results = cursor.fetchall()
+        encontrado=False
+        dTipoProducto=[]
+        for row in results:
+            if (str(row[0])==idTipoProducto):
+                dTipoProducto=row
+                encontrado=True
+                break
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
+    
+    return encontrado,row
+
+def InsertTipoProducto():
+    ## ---- NOMBRE TIPO PRODUCTO
+    nombre=""
+    while (nombre==""):
+        nombre=input("Ingrese el nombre del tipo de Producto: ")
+    ## --- DESCRIPCION TIPO PRODUCTO
+    desc=""
+    while (desc==""):
+        desc=input("Ingrese la descripcion del tipo de Producto: ")
+    
+    try:
+        # Establecer la conexión a la base de datos
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
+        else:
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_CrearTipoProducto",[nombre,desc])
+            # Recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+            
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# InsertTipoProducto()
+
+def vistaTipoProducto():
+    try:
+        # Establecer la conexión a la base de datos
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
+        else:
+            cur=con.cursor()
+            cur.callproc("DBMS_OUTPUT.ENABLE")
+            cur.execute("SELECT * FROM V_TiposProducto")
+            
+            # Recuperar los mensajes de salida
+            results = cur.fetchall()
+            if results:
+                print("---Tipos de Productos Registrados---")
+                print("ID","\tNombre","\tDescripcion")
+                for row in results:
+                    print(row[0],"\t",row[1],"\t",row[2])
+            else:
+                print("No hay registros")
+
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# vistaTipoProducto()
+
+def verTipoProductoEspecifico():
+    # op=0
+    # nombre=""
+    # id=0
+    # while op!=1 and op!=2:
+    #     input("Ingrese 1 para buscar por ID o 2 para buscar por nombre: ")
+    
+    # if op==1:
+    #     id=input("Ingrese el ID del tipo de producto: ")
+    # else:
+    #     nombre=input("Ingrese el nombre del tipo de producto: ")
+    
+    # try:
+    print("EN DESARRROLLO")
+
+def editarTipoProducto():
+    vistaTipoProducto()
+    
+    #pide el id del tipo de producto a actualizar
+    idTipoProducto=""
+    dTipoProducto=[]
+    
+    while (idTipoProducto==""):
+        idTipoProducto=input("Ingrese el id del tipo de Producto a actualizar: ")
+
+    #se buscar el tipo de producto por id
+    (encontrado,dTipoProducto)=EncTipoProductoID(idTipoProducto)
+    
+    if encontrado:
+        idTipoProducto=dTipoProducto[0]
+        nombre=dTipoProducto[1]
+        desc=dTipoProducto[2]
+        
+        nombre2=""
+        des2=""
+        
+        op=""
+        while (str(op)!="0"):
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: ("+nombre+")\n"
+                "2. Descripcion: ("+desc+")\n"
+                "0. Salir"
+            )
+            op=input("Ingrese una opción: ")
+            if op=="1":
+                nombre=input("Ingrese el nuevo nombre: ")
+            elif op=="2":
+                desc=input("Ingrese la nueva descripcion: ")
+            
+            try:
+                con=establecer_conexion()
+                if con is None:
+                    print("No se logró establecer la conexión con la base de datos")
+                else:
+                    cursor=con.cursor()
+                    cursor.callproc("DBMS_OUTPUT.ENABLE")
+                    cursor.callproc("SP_EditarTipoProducto",[idTipoProducto,nombre,desc])
+                    # Recuperar los mensajes de salida
+                    status_var = cursor.var(cx_Oracle.NUMBER)
+                    line_var = cursor.var(cx_Oracle.STRING)
+                    while True:
+                        cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                        if status_var.getvalue() != 0:
+                            break
+                        print(line_var.getvalue())
+                    con.commit()
+            except Exception as ex:
+                print(ex)
+            finally:
+                if con:
+                    con.close()
+    else:
+        print("Tipo de Producto no encontrado")
+# editarTipoProducto()
+
+def eliminarTipoProducto():
+    vistaTipoProducto()
+    op=""
+    while op=="":
+        op=input("Ingrese el id del tipo de Producto a eliminar: ")
+    
+    try:
+        con=establecer_conexion()
+        cursor=con.cursor()
+        cursor.callproc("DBMS_OUTPUT.ENABLE")
+        cursor.callproc("SP_EliminarTipoProducto",[str(op)])
+        #recuperar los mensajes de salida
+        status_var = cursor.var(cx_Oracle.NUMBER)
+        line_var = cursor.var(cx_Oracle.STRING)
+        while True:
+            cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+            if status_var.getvalue() != 0:
+                break
+            print(line_var.getvalue())
+        con.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# eliminarTipoProducto()
+
+#-------------------------MODULO Productos-------------------------
+def EncProductoID(idProducto):
+    try:
+        connection=establecer_conexion()
+        
+        cursor=connection.cursor()
+        cursor.execute("SELECT * FROM Producto WHERE idProducto='"+str(idProducto)+"'")
+        results = cursor.fetchall()
+        encontrado=False
+        dProducto=[]
+        for row in results:
+            if (str(row[0])==idProducto):
+                dProducto=row
+                encontrado=True
+                break
+    except Exception as ex:
+        print(ex)
+    
+    finally:
+        if connection:
+            connection.close()
+    
+    return encontrado,dProducto
+
+def InsertProducto():
+    nombre=""
+    while(nombre==""):
+        nombre=input("Ingrese el nombre del producto: ")
+    desc=""
+    while(desc==""):
+        desc=input("Ingrese la descripcion del producto: ")
+    stock=0
+    while(stock==0):
+        stock=input("Ingrese el numero de stock: ")
+    estatus=1
+    precio=0
+    while(precio==0):
+        precio=input("Ingrese el precio: ")
+    idTipoProducto=0
+    while(idTipoProducto==0):
+        vistaTipoProducto()
+        idTipoProducto=input("Ingrese el id del tipo de producto: ")
+    try:
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos")
+        else:
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_CrearProducto",[nombre,desc,stock,estatus,precio,idTipoProducto])
+            # Recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# InsertProducto()
+
+def vistaProductos():
+    try:
+        # Establecer la conexión a la base de datos
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
+        else:
+            cur=con.cursor()
+            cur.callproc("DBMS_OUTPUT.ENABLE")
+            cur.execute("SELECT * FROM V_Productos")
+            
+            # Recuperar los mensajes de salida
+            results = cur.fetchall()
+            if results:
+                print("---Productos Registrados---")
+                print("ID","\tNombre","\tDescripcion","\tStock","\tEstatus","\tTipoProducto")
+                for row in results:
+                    print(row[0],"\t",row[1],"\t",row[2],"\t",row[3],"\t",row[4],"\t",row[5])
+            else:
+                print("No hay registros")
+
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# vistaProductos()
+
+def verProductoEspecifico():
+    print("EN DESARRROLLO")
+
+def editarProductos():
+    vistaProductos()
+    
+    idProducto=""
+    dProducto=[]
+    
+    while(idProducto==""):
+        idProducto=input("Ingrese el id del producto a actualizar: ")
+        
+    (encontrado,dProducto)=EncProductoID(idProducto)
+    if encontrado:
+        idProducto=dProducto[0]
+        nombre=dProducto[1]
+        desc=dProducto[2]
+        stock=dProducto[3]
+        estatus=dProducto[4]
+        precio=dProducto[5]
+        idTipoProducto=dProducto[6]
+        (encontrado,dTipoProducto)=EncTipoProductoID(idTipoProducto)
+        nombreTipoProducto=dTipoProducto[1]
+        
+        op=""
+        while op!="0":
+            print(
+                "QUE DATO DESEA EDITAR: \n"
+                "1. Nombre: ("+nombre+")\n"
+                "2. Descripcion: ("+desc+")\n"
+                "3. Stock: ("+str(stock)+")\n"
+                "4. Estatus: ("+str(estatus)+")\n"
+                "5. Precio: ("+str(precio)+")\n"
+                "6. Tipo de Producto: ("+str(idTipoProducto)+"-"+nombreTipoProducto+")\n"
+                "0. Salir"
+            )
+            op=input("Ingrese una opción: ")
+            
+            if op=="1":
+                nombre=input("Ingrese el nuevo nombre: (anterior: "+nombre+")")
+            elif op=="2":
+                desc=input("Ingrese la nueva descripcion: (anterior: "+desc+")")
+            elif op=="3":
+                stock=input("Ingrese el nuevo numero de cupos: (anterior: "+str(stock)+")")
+            elif op=="4":
+                tipoEstatus=""
+                if estatus==1:
+                    tipoEstatus="Activo"
+                else:
+                    tipoEstatus="Inactivo"
+                    
+                estatus=input("Ingrese el nuevo estatus: (anterior: "+tipoEstatus+"\n)"
+                            "1. Activo\n"
+                            "0. Inactivo\n")
+            elif op=="5":
+                precio=input("Ingrese la nueva fecha: (anterior: "+str(precio)+")")
+                
+            elif op=="6":
+                vistaTipoProducto()
+                (encontrado,dTipoProducto)=EncTipoProductoID(idTipoProducto)
+                nombreTipoProducto=dTipoProducto[1]
+                idTipoProducto=input("Ingrese el nuevo id del tipo de producto: (anterior: "+str(idTipoProducto)+")")
+            
+            try:
+                con=establecer_conexion()
+                if con is None:
+                    print("No se logró establecer la conexión con la base de datos")
+                else:
+                    cursor=con.cursor()
+                    cursor.callproc("DBMS_OUTPUT.ENABLE")
+                    cursor.callproc("SP_EditarProducto",[str(idProducto),nombre,desc,str(stock),str(estatus),precio,str(idTipoProducto)])
+                    # Recuperar los mensajes de salida
+                    status_var = cursor.var(cx_Oracle.NUMBER)
+                    line_var = cursor.var(cx_Oracle.STRING)
+                    while True:
+                        cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                        if status_var.getvalue() != 0:
+                            break
+                        print(line_var.getvalue())
+                    con.commit()
+            except Exception as ex:
+                print(ex)
+            finally:
+                if con:
+                    con.close()
+# editarProducto()
+
+def eliminarProductos():
+    vistaProductos()
+    
+    op=""
+    while op=="":
+        op=input("Ingrese el id del producto a eliminar o 'S' para SALIR:")
+    
+    if op.upper()!="S":
+        try:
+            con=establecer_conexion()
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_EliminarProducto",[str(op)])
+            #recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+        except Exception as ex:
+            print(ex)
+        finally:
+            if con:
+                con.close()
+# eliminarProducto()
+
+def verProductosPorTipo():
+    vistaTipoProducto()
+    idTipoProducto=""
+    while idTipoProducto=="":
+        idTipoProducto=input("Ingrese el id del tipo de producto: ")
+    
+    try:
+        con=establecer_conexion()
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos")
+        else:
+            cursor=con.cursor()
+            cursor.callproc("DBMS_OUTPUT.ENABLE")
+            cursor.callproc("SP_verProductosTipo",[str(idTipoProducto)])
+            # Recuperar los mensajes de salida
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(cx_Oracle.STRING)
+            while True:
+                cursor.callproc('DBMS_OUTPUT.GET_LINE', (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+            con.commit()
+    except Exception as ex:
+        print(ex)
+    finally:
+        if con:
+            con.close()
+# verProductosPorTipo()
 
 
 #----------------------------MENUS--------------------------------
 def menu_roles():
-    print("EN DESARRROLLO")
+    op=""
+    while op!="":
+        print(
+            "********** MENU DE ROLES**********\n"
+            "1. CREAR ROL\n"
+            "2. VER ROLES\n"
+            "3. VER ROL ESPECIFICO\n"
+            "4. EDITAR ROL\n"
+            "5. ELIMINAR ROL\n"
+            "0. SALIR\n"
+        )
+        op=input("Ingrese una opción: ")
+        
+        if op=="1":
+            InsertRol()
+        elif op=="2":
+            VerRoles()
+        elif op=="3":
+            verRolEspecifico()
+        elif op=="4":
+            EditarRol()
+        elif op=="5":
+            EliminarRol()
+    
 
 def menu_usuarios():
     print("EN DESARRROLLO")
@@ -1091,10 +1566,57 @@ def menu_servicios():
             verServiciosPorTipo()
 
 def menu_tipoProductos():
-    print("EN DESARRROLLO")
+    op=""
+    while op!="0":
+        print(
+            "********** MENU DE TIPO PRODUCTO**********\n"
+            "1. CREAR TIPO producto\n"
+            "2. VER TIPO producto\n"
+            "3. VER TIPO producto ESPECIFICO\n"
+            "4. EDITAR TIPO producto\n"
+            "5. ELIMINAR TIPO producto\n"
+            "0. SALIR\n"
+        )
+        op=input("Ingrese una opción: ")
+        
+        if op=="1":
+            InsertTipoProducto()
+        elif op=="2":
+            vistaTipoProducto()
+        elif op=="3":
+            verTipoProductoEspecifico()
+        elif op=="4":
+            editarTipoProducto()
+        elif op=="5":
+            eliminarTipoProducto()
 
 def menu_productos():
-    print("EN DESARRROLLO")
+    op=""
+    while op!="0":
+        print(
+                "***************** MENU DE PRODUCTOS *****************\n"
+                "1. CREAR PRODUCTOS\n"
+                "2. VER PRODUCTOS\n"
+                "3. VER PRODUCTO ESPECIFICO\n"
+                "4. EDITAR PRODUCTOS\n"
+                "5. ELIMINAR PRODUCTOS\n"
+                "6. VER PRODUCTOS POR TIPO\n"
+                "0. SALIR\n"
+            )
+        
+        op=input("Ingrese una opción: ")
+        if op=="1":
+            InsertProducto()
+        elif op=="2":
+            vistaProductos()
+        elif op=="3":
+            verProductoEspecifico()
+        elif op=="4":
+            editarProductos()
+        elif op=="5":
+            eliminarProductos()
+        elif op=="6":
+            verProductosPorTipo()
 
 def MENU_PRINCIPAL():
     op=""
