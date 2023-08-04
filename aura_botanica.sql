@@ -1567,3 +1567,309 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('Error: El tipo de producto no existe.');
     END IF;
 END;
+
+
+--Se adiciona una columna a la tabla compraproducto, para calcular el subtotal por cada producto a comprar.
+ALTER TABLE CompraProducto
+ADD subtotal decimal;
+
+--Se cambia el orden de los estados
+de : 0 = pendiente, 1 = en proceso, 2 = revision, 3 = cancelado, 4= entregado
+a: 0 = pendiente, 1 = en proceso, 2 = revision, 3= entregado, 4 = cancelado
+
+
+--Se crea sequencia para el número de tracking
+CREATE SEQUENCE seq_compra_id
+    START WITH 1
+    INCREMENT BY 1
+    NOCACHE;
+
+-- Trigger para restar la cantidad comprada del stock al insertar una nueva compra
+CREATE OR REPLACE TRIGGER trg_actualizar_stock_compra
+AFTER INSERT ON CompraProducto
+FOR EACH ROW
+BEGIN
+    UPDATE Producto
+    SET stock = stock - :NEW.cantidad
+    WHERE idProducto = :NEW.idProducto;
+END;
+
+--Trigger para devolver la cantidad eliminada del stock al eliminar un producto de una compra
+CREATE OR REPLACE TRIGGER trg_restaurar_stock_compra
+BEFORE DELETE ON CompraProducto
+FOR EACH ROW
+BEGIN
+    UPDATE Producto
+    SET stock = stock + :OLD.cantidad
+    WHERE idProducto = :OLD.idProducto;
+END;
+
+--Declaración del paquete COMPRAS
+CREATE OR REPLACE PACKAGE PKG_Compras AS
+
+    -- Definir el tipo de tabla para los productos y cantidades
+    TYPE producto_table_type IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+    TYPE cantidad_table_type IS TABLE OF NUMBER INDEX BY PLS_INTEGER;
+
+    -- Procedimiento para realizar una nueva compra
+    PROCEDURE RealizarCompra(
+        p_idUsuario IN NUMBER,
+        p_productos IN producto_table_type,
+        p_cantidades IN cantidad_table_type
+    );
+
+    -- Procedimiento para agregar un producto a una compra existente
+    PROCEDURE AgregarProductoACompra(
+        p_idCompra IN NUMBER,
+        p_idProducto IN NUMBER,
+        p_cantidad IN NUMBER
+    );
+
+    -- Función para obtener el total de compras realizadas por un usuario
+    FUNCTION ObtenerTotalComprasUsuario(p_idUsuario IN NUMBER) RETURN NUMBER;
+
+    -- Función para obtener el total de productos en una compra
+    FUNCTION ObtenerTotalProductosCompra(p_idCompra IN NUMBER) RETURN NUMBER;
+
+    -- Procedimiento para actualizar el estatus de una compra
+    PROCEDURE ActualizarEstatusCompra(p_idCompra IN NUMBER, p_estatus IN NUMBER);
+
+    -- Procedimiento para cancelar una compra
+    PROCEDURE CancelarCompra(p_idCompra IN NUMBER);
+
+    -- Procedimiento para eliminar un producto de una compra
+    PROCEDURE EliminarProductoDeCompra(p_idCompra IN NUMBER, p_idProducto IN NUMBER);
+
+    -- Procedimiento para obtener el detalle de una compra
+    PROCEDURE ObtenerDetalleCompra(p_idCompra IN NUMBER);
+
+END PKG_Compras;
+
+--Contenido del paquete compras
+CREATE OR REPLACE PACKAGE BODY PKG_Compras AS
+
+    PROCEDURE RealizarCompra(
+        p_idUsuario IN NUMBER,
+        p_productos IN producto_table_type,
+        p_cantidades IN cantidad_table_type
+    ) AS
+        v_idCompra NUMBER;
+        v_numeroTracking VARCHAR2(200);
+        v_precioTotal NUMBER := 0;
+        v_estatus NUMBER := 0; -- Estatus predeterminado: 0 (pendiente)
+    BEGIN
+        -- Generar el número de tracking automáticamente de manera ordenada utilizando la secuencia
+        SELECT 'TRK' || TO_CHAR(SYSDATE, 'YYYYMMDD') || LPAD(seq_compra_id.NEXTVAL, 4, '0')
+        INTO v_numeroTracking
+        FROM DUAL;
+
+        -- Calcular el precio total basado en los productos y las cantidades compradas
+        FOR i IN 1..p_productos.COUNT LOOP
+            DECLARE
+                v_precioProducto NUMBER;
+            BEGIN
+                SELECT precio INTO v_precioProducto
+                FROM Producto
+                WHERE idProducto = p_productos(i);
+
+                v_precioTotal := v_precioTotal + (p_cantidades(i) * v_precioProducto);
+            END;
+        END LOOP;
+
+        -- Insertar la nueva compra en la tabla Compra
+        INSERT INTO Compra (numeroTracking, precioTotal, estatus, idUsuario)
+        VALUES (v_numeroTracking, v_precioTotal, v_estatus, p_idUsuario)
+        RETURNING idCompra INTO v_idCompra;
+        
+        -- Insertar los productos de la compra en la tabla CompraProducto
+        FOR i IN 1..p_productos.COUNT LOOP
+            -- Calcular el precio total del producto en base a la cantidad comprada
+            DECLARE
+                v_precioProducto NUMBER;
+            BEGIN
+                SELECT precio INTO v_precioProducto
+                FROM Producto
+                WHERE idProducto = p_productos(i);
+
+                INSERT INTO CompraProducto (idCompra, idProducto, cantidad, subtotal)
+                VALUES (v_idCompra, p_productos(i), p_cantidades(i), p_cantidades(i) * v_precioProducto);
+            END;
+        END LOOP;
+        
+        -- Commit para confirmar la transacción
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END RealizarCompra;
+
+    PROCEDURE AgregarProductoACompra(
+    p_idCompra IN NUMBER,
+    p_idProducto IN NUMBER,
+    p_cantidad IN NUMBER
+    ) AS
+        v_precioProducto NUMBER;
+    BEGIN
+        -- Insertar el producto en la tabla CompraProducto
+        INSERT INTO CompraProducto (idCompra, idProducto, cantidad)
+        VALUES (p_idCompra, p_idProducto, p_cantidad);
+        
+        -- Calcular el subtotal del producto agregado
+        SELECT precio INTO v_precioProducto
+        FROM Producto
+        WHERE idProducto = p_idProducto;
+        
+        UPDATE CompraProducto
+        SET subtotal = p_cantidad * v_precioProducto
+        WHERE idCompra = p_idCompra AND idProducto = p_idProducto;
+        
+        -- Actualizar el precio total de la compra
+        UPDATE Compra
+        SET precioTotal = (SELECT NVL(SUM(subtotal), 0) FROM CompraProducto WHERE idCompra = p_idCompra)
+        WHERE idCompra = p_idCompra;
+        
+        -- Commit para confirmar la transacción
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END AgregarProductoACompra;
+
+    FUNCTION ObtenerTotalComprasUsuario(p_idUsuario IN NUMBER) RETURN NUMBER AS
+        v_totalCompras NUMBER;
+    BEGIN
+        -- Obtener el total de compras del usuario
+        SELECT COUNT(*) INTO v_totalCompras
+        FROM Compra
+        WHERE idUsuario = p_idUsuario;
+        
+        RETURN v_totalCompras;
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE;
+    END ObtenerTotalComprasUsuario;
+
+    FUNCTION ObtenerTotalProductosCompra(p_idCompra IN NUMBER) RETURN NUMBER AS
+        v_totalProductos NUMBER;
+    BEGIN
+        -- Obtener el total de productos en la compra
+        SELECT COUNT(*) INTO v_totalProductos
+        FROM CompraProducto
+        WHERE idCompra = p_idCompra;
+        
+        RETURN v_totalProductos;
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE;
+    END ObtenerTotalProductosCompra;
+
+    PROCEDURE ActualizarEstatusCompra(p_idCompra IN NUMBER, p_estatus IN NUMBER) AS
+    BEGIN
+        -- Actualizar el estatus de la compra
+        UPDATE Compra
+        SET estatus = p_estatus
+        WHERE idCompra = p_idCompra;
+        
+        -- Commit para confirmar la transacción
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END ActualizarEstatusCompra;
+
+    PROCEDURE CancelarCompra(p_idCompra IN NUMBER) AS
+    BEGIN
+        -- Actualizar el estatus de la compra a 4 (cancelado)
+        ActualizarEstatusCompra(p_idCompra, 4);
+    EXCEPTION
+        WHEN OTHERS THEN
+            RAISE;
+    END CancelarCompra;
+
+    PROCEDURE EliminarProductoDeCompra(p_idCompra IN NUMBER, p_idProducto IN NUMBER) AS
+    BEGIN
+        -- Eliminar el producto de la compra
+        DELETE FROM CompraProducto
+        WHERE idCompra = p_idCompra AND idProducto = p_idProducto;
+        
+        -- Actualizar el precio total de la compra
+        UPDATE Compra
+        SET precioTotal = (SELECT NVL(SUM(subtotal), 0) FROM CompraProducto WHERE idCompra = p_idCompra)
+        WHERE idCompra = p_idCompra;
+        
+        -- Commit para confirmar la transacción
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            RAISE;
+    END EliminarProductoDeCompra;
+    
+    PROCEDURE ObtenerDetalleCompra(p_idCompra IN NUMBER) AS
+    v_cliente VARCHAR2(200);
+    v_correo VARCHAR2(150);
+    v_producto VARCHAR2(100);
+    v_descripcion VARCHAR2(300);
+    v_cantidad NUMBER;
+    v_precioProducto NUMBER;
+    v_subtotal NUMBER;
+    v_precioTotal NUMBER;
+    BEGIN
+        -- Obtener los datos del cliente de la compra
+        SELECT u.nombre || ' ' || u.primapellido || ' ' || u.segapellido, u.correo
+        INTO v_cliente, v_correo
+        FROM Compra c
+        JOIN Usuario u ON c.idUsuario = u.idUsuario
+        WHERE c.idCompra = p_idCompra;
+    
+        -- Obtener el precio total de la compra
+        SELECT precioTotal
+        INTO v_precioTotal
+        FROM Compra
+        WHERE idCompra = p_idCompra;
+    
+        -- Mostrar los datos del cliente
+        DBMS_OUTPUT.PUT_LINE('---Detalle de la compra---');
+        DBMS_OUTPUT.PUT_LINE('---Cliente: ' || v_cliente || '---');
+        DBMS_OUTPUT.PUT_LINE('---Correo: ' || v_correo || '---');
+    
+        -- Abrir el cursor explícito para obtener los productos de la compra
+        FOR compra IN (
+            SELECT p.nombre AS PRODUCTO, p.descripcion AS DESCRIPCION, cp.cantidad, cp.subtotal, p.precio
+            FROM Compra c
+            JOIN CompraProducto cp ON c.idCompra = cp.idCompra
+            JOIN Producto p ON cp.idProducto = p.idProducto
+            WHERE c.idCompra = p_idCompra
+        ) LOOP
+            -- Mostrar el detalle del producto
+            DBMS_OUTPUT.PUT_LINE('---Producto: ' || compra.PRODUCTO ||
+                                  ' || Descripción: ' || compra.DESCRIPCION ||
+                                  ' || Cantidad: ' || compra.cantidad ||
+                                  ' || Precio por Producto: ' || compra.precio ||
+                                  ' || Subtotal: ' || compra.subtotal);
+        END LOOP;
+    
+        -- Mostrar el precio total de la compra
+        DBMS_OUTPUT.PUT_LINE('------------------------------');
+        DBMS_OUTPUT.PUT_LINE('---Precio Total de la Compra: ' || v_precioTotal || '---');
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            DBMS_OUTPUT.PUT_LINE('No se encontró la compra indicada.');
+        WHEN OTHERS THEN
+            RAISE;
+    END ObtenerDetalleCompra;
+
+END PKG_Compras;
+
+--Se crea vista para el resumen de las compras
+CREATE OR REPLACE VIEW resumen_compras AS
+SELECT  c.IDCOMPRA, c.NUMEROTRACKING, u.nombre || ' ' || u.primapellido || ' ' || u.segapellido "Cliente",
+u.correo, SUM(cp.cantidad) "CANTIDAD PRODUCTOS", c.preciototal, c.estatus
+FROM compra c
+INNER JOIN usuario u ON c.idusuario = u.idusuario
+INNER JOIN compraproducto cp ON c.idcompra = cp.idcompra
+GROUP BY c.IDCOMPRA, c.NUMEROTRACKING, u.nombre, u.primapellido, u.segapellido, u.correo, c.preciototal, c.estatus
+ORDER BY c.idcompra
