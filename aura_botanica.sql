@@ -1437,6 +1437,51 @@ CREATE OR REPLACE VIEW V_Productos AS
     FROM Producto u
     INNER JOIN TipoProducto t ON u.idTipoProducto = t.idTipoProducto;
 
+-- Vista Leer_Productos #26
+CREATE OR REPLACE VIEW Vista_LeerProductos AS
+SELECT IDPRODUCTO "ID", IDTIPOPRODUCTO "CATEGORIA", NOMBRE, DESCRIPCION, STOCK, ESTATUS, PRECIO
+FROM PRODUCTO
+
+SELECT * FROM Vista_LeerProductos
+
+--SP_LeerProducto #24
+CREATE OR REPLACE PROCEDURE SP_LeerProducto(
+    p_idProducto IN NUMBER
+) AS
+    v_contador NUMBER;
+    v_id NUMBER;
+    v_categoria NUMBER;
+    v_nombre VARCHAR(100);
+    v_descipcion VARCHAR(200);
+    v_stock NUMBER;
+    v_status NUMBER;
+    v_precio FLOAT;
+BEGIN
+    SELECT COUNT(*) INTO v_contador
+    FROM Vista_LeerProductos p
+    WHERE p."ID" = p_idProducto;
+    
+    IF v_contador > 0 THEN
+        SELECT *
+        INTO v_id, v_categoria, v_nombre, v_descipcion, v_stock, v_status, v_precio
+        FROM Vista_LeerProductos p
+        WHERE p."ID" = p_idProducto;
+        DBMS_OUTPUT.PUT_LINE('---Datos del  producto---');
+        DBMS_OUTPUT.PUT_LINE('ID: ' || v_id);
+        DBMS_OUTPUT.PUT_LINE('ID Tipo Producto: ' || v_categoria);
+        DBMS_OUTPUT.PUT_LINE('Nombre: ' || v_nombre);
+        DBMS_OUTPUT.PUT_LINE('Descripción: ' || v_descipcion);
+        DBMS_OUTPUT.PUT_LINE('Stock: ' || v_stock);
+        DBMS_OUTPUT.PUT_LINE('Estatus: ' || v_status);
+        DBMS_OUTPUT.PUT_LINE('Precio: ' || v_precio);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('No se encontró el producto indicado.');
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al leer el producto: ' || SQLERRM);
+END;
+
 ----------------editar producto----------------
 CREATE OR REPLACE PROCEDURE SP_editarProducto(
     p_idProducto IN Producto.idProducto%TYPE,

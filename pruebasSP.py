@@ -202,7 +202,7 @@ def EliminarRol():
                 print("\nRol seleccionado:", nombreRol)
 
                 # Llama al SP para eliminar el rol
-                connection = conexion()
+                connection = establecer_conexion()
                 cursor = connection.cursor()
 
                 # Habilitar el DBMS_OUTPUT para capturar los mensajes del SP
@@ -275,6 +275,7 @@ def menu_editar_roles():
 
 def verRolEspecifico():
     print("EN DESARRROLLO")
+
 #--------------------MODULO USUARIOS--------------------#
 def EncUsuarioID(idUsuario):
     encontrado = False
@@ -330,73 +331,74 @@ def VerUsuarios():
             connection.close()
 
 def InsertUsuario():
-    # DATOS DE USUARIO
-    nombre = ""
-    while nombre == "":
-        nombre = input("Ingrese su nombre: ")
-    # ---- APELLIDO 1
-    apellido1 = ""
-    while apellido1 == "":
-        apellido1 = input("Ingrese su Primer Apellido: ")
-    # ---- APELLIDO 2
-    apellido2 = ""
-    while apellido2 == "":
-        apellido2 = input("Ingrese su Segundo Apellido: ")
-    # ---- CEDULA
-    cedula = ""
-    while cedula == "":
-        cedula = input("Ingrese su cédula: ")
-    # ---- CORREO
-    correo = ""
-    while correo == "":
-        correo = input("Ingrese su correo: ")
-    contrasenna = input("Ingrese su contraseña: ")
-    # ---- ROL
-    idRol = ""
-    encontrado = False
-    while not encontrado and idRol == "":
-        usuarios = VerRoles()
+    if rolesCant() != 0:
+        # DATOS DE USUARIO
+        nombre = ""
+        while nombre == "":
+            nombre = input("Ingrese su nombre: ")
+        # ---- APELLIDO 1
+        apellido1 = ""
+        while apellido1 == "":
+            apellido1 = input("Ingrese su Primer Apellido: ")
+        # ---- APELLIDO 2
+        apellido2 = ""
+        while apellido2 == "":
+            apellido2 = input("Ingrese su Segundo Apellido: ")
+        # ---- CEDULA
+        cedula = ""
+        while cedula == "":
+            cedula = input("Ingrese su cédula: ")
+        # ---- CORREO
+        correo = ""
+        while correo == "":
+            correo = input("Ingrese su correo: ")
+        contrasenna = input("Ingrese su contraseña: ")
+        # ---- ROL
+        idRol = ""
+        encontrado = False
+        while not encontrado and idRol == "":
+            usuarios = VerRoles()
 
-        u = ""
-        for u in usuarios:
-            u = str(u) + "\n"
+            u = ""
+            for u in usuarios:
+                u = str(u) + "\n"
 
-        idRol = input("Ingrese su rol: \n" + u + "\n")
+            idRol = input("Ingrese su rol: \n" + u + "\n")
 
-        for i in usuarios:
-            if str(i[0]) == idRol:
-                encontrado = True
-                idRol = i[0]
-                break
+            for i in usuarios:
+                if str(i[0]) == idRol:
+                    encontrado = True
+                    idRol = i[0]
+                    break
 
-        if not encontrado:
-            print("Rol no encontrado\nReintente nuevamente")
+            if not encontrado:
+                print("Rol no encontrado\nReintente nuevamente")
+        try:
+            connection = establecer_conexion()
+            ##coneccion 
+            cursor = connection.cursor()
 
-
-    try:
-        connection = establecer_conexion()
-        ##coneccion 
-        cursor = connection.cursor()
-
-        # Recuperar los mensajes de DBMS_OUTPUT
-        message = cursor.var(cx_Oracle.STRING)
-        status = cursor.var(cx_Oracle.NUMBER)
-        # Llamada al SP para crear el usuario
-        cursor.callproc("SP_CrearUsuario", [nombre, apellido1, apellido2, cedula, correo, contrasenna, idRol])
-        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
-        while status.getvalue() == 0:
-            print(message.getvalue())
+            # Recuperar los mensajes de DBMS_OUTPUT
+            message = cursor.var(cx_Oracle.STRING)
+            status = cursor.var(cx_Oracle.NUMBER)
+            # Llamada al SP para crear el usuario
+            cursor.callproc("SP_CrearUsuario", [nombre, apellido1, apellido2, cedula, correo, contrasenna, idRol])
             cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+            while status.getvalue() == 0:
+                print(message.getvalue())
+                cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
 
-        cursor.execute("commit")
-        print("Usuario creado con éxito")
+            cursor.execute("commit")
+            print("Usuario creado con éxito")
 
-    except Exception as ex:
-        print(ex)
+        except Exception as ex:
+            print(ex)
 
-    finally:
-        if connection:
-            connection.close()
+        finally:
+            if connection:
+                connection.close()
+    else:
+        print("Debe crear roles previamente")
 
 def VerUsuarioEspecifico():
     op = ""
@@ -1481,11 +1483,549 @@ def verProductosPorTipo():
             con.close()
 # verProductosPorTipo()
 
+####################################################### Modulo Compras #######################################################
+
+# Función para mostrar los productos disponibles
+def mostrar_productos_disponibles():
+    # Establecer la conexión a la base de datos
+    connection = establecer_conexion()
+    try:
+        # Consulta para obtener los productos disponibles desde la vista
+        cursor = connection.cursor()
+        cursor.execute("""SELECT "ID", "NOMBRE", "DESCRIPCION", "PRECIO"
+                        FROM Vista_LeerProductos v
+                        WHERE v."ESTATUS" = 1""")
+        
+        # Hacer commit para asegurarse de refrescar los datos en la vista
+        connection.commit()
+        
+        # Mostrar los productos disponibles al cliente
+        print("-- Datos de los productos disponibles --")
+        print("-------------------------------------")
+
+        # Configurar el tamaño del conjunto de resultados a "all" para leer todos los registros
+        rows = cursor.fetchall()
+
+        for row in rows:
+            print(f"ID: {row[0]}, Nombre: {row[1]}, Descripción: {row[2]}, Precio: {row[3]}")
+        print("-------------------------------------")
+
+    except cx_Oracle.DatabaseError as e:
+        print("Error al obtener los datos de la vista Vista_LeerProductos:", e)
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+def mostrar_resumen_compras():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Ejecutar la consulta para obtener el resumen de compras
+        cursor = connection.cursor()
+        cursor.execute("SELECT IDCOMPRA, NUMEROTRACKING, \"Cliente\", CORREO, \"CANTIDAD PRODUCTOS\", PRECIOTOTAL FROM resumen_compras")
+
+        # Mostrar los resultados
+        print("\n--- Resumen de Compras ---")
+        for compra in cursor:
+            print(f"ID de Compra: {compra[0]}")
+            print(f"Número de Tracking: {compra[1]}")
+            print(f"Cliente: {compra[2]}")
+            print(f"Correo del Cliente: {compra[3]}")
+            print(f"Cantidad de Productos: {compra[4]}")
+            print(f"Precio Total: {compra[5]}")
+            print("--------------------------")
+
+    except cx_Oracle.DatabaseError as e:
+        print("Error al mostrar el resumen de compras:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+def mostrar_resumen_compras_por_estatus(estatus):
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Ejecutar la consulta para obtener el resumen de compras
+        cursor = connection.cursor()
+        cursor.execute(f"SELECT IDCOMPRA, NUMEROTRACKING, \"Cliente\", CORREO, \"CANTIDAD PRODUCTOS\", PRECIOTOTAL FROM resumen_compras WHERE ESTATUS = {estatus}")
+
+        # Mostrar los resultados
+        print("\n--- Resumen de Compras ---")
+        for compra in cursor:
+            print(f"ID de Compra: {compra[0]}")
+            print(f"Número de Tracking: {compra[1]}")
+            print(f"Cliente: {compra[2]}")
+            print(f"Correo del Cliente: {compra[3]}")
+            print(f"Cantidad de Productos: {compra[4]}")
+            print(f"Precio Total: {compra[5]}")
+            print("--------------------------")
+
+    except cx_Oracle.DatabaseError as e:
+        print("Error al mostrar el resumen de compras:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+# Función para realizar una compra
+def realizar_compra():
+    # Establecer la conexión a la base de datos
+    connection = establecer_conexion()
+
+    try:
+        # Pedir al usuario los datos para realizar la compra
+        while True:
+            VerUsuarios()
+            id_usuario = input("Ingrese el ID del usuario que realiza la compra (Escriba 'q' para salir): ")
+            if id_usuario.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_usuario.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_usuario = int(id_usuario)
+                break
+
+        while True:
+            num_productos = input("Ingrese el número de productos que desea comprar (Escriba 'q' para salir): ")
+            if num_productos.lower() == 'q':
+                print("Operación cancelada.")
+                return
+            elif not num_productos.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                num_productos = int(num_productos)
+                break
+
+        productos = []
+        cantidades = []
+
+        for i in range(num_productos):
+            while True:
+                vistaProductos()
+                id_producto = input(f"Ingrese el ID del producto {i+1} (Escriba 'q' para salir): ")
+                if id_producto.lower() == 'q':
+                    print("Operación cancelada.")
+                    return menu_compras()
+                elif not id_producto.isdigit():
+                    print("Error: Ingrese un valor numérico válido.")
+                else:
+                    id_producto = int(id_producto)
+                    break
+
+            while True:
+                cantidad = input(f"Ingrese la cantidad del producto {i+1} (Escriba 'q' para salir): ")
+                if cantidad.lower() == 'q':
+                    print("Operación cancelada.")
+                    return menu_compras()
+                elif not cantidad.isdigit():
+                    print("Error: Ingrese un valor numérico válido.")
+                else:
+                    cantidad = int(cantidad)
+                    break
+
+            productos.append(id_producto)
+            cantidades.append(cantidad)
+
+        # Convertir las listas de Python a un objeto SYS.ODCINUMBERLIST de Oracle
+        productos_array = connection.cursor().arrayvar(cx_Oracle.NUMBER, productos)
+        cantidades_array = connection.cursor().arrayvar(cx_Oracle.NUMBER, cantidades)
+
+        # Llamar al procedimiento RealizarCompra del paquete PKG_Compras
+        cursor = connection.cursor()
+        cursor.callproc("PKG_Compras.RealizarCompra", [id_usuario, productos_array, cantidades_array])
+        connection.commit()
+
+        print("¡Compra realizada con éxito!")
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al realizar la compra:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+# Procedimiento para agregar un producto a una compra existente
+def agregar_producto_a_compra():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Mostrar productos disponibles
+        mostrar_resumen_compras()
+        print("\n****************************************************************")
+        print("****************************************************************\n")
+        mostrar_productos_disponibles()
+
+        # Pedir al usuario los datos para agregar un producto a una compra
+        while True:
+            id_compra = input("Ingrese el ID de la compra existente (Escriba 'q' para cancelar): ")
+            if id_compra.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_compra.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_compra = int(id_compra)
+                break
+
+        while True:
+            id_producto = input("Ingrese el ID del producto a agregar (Escriba 'q' para cancelar): ")
+            if id_producto.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_producto.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_producto = int(id_producto)
+                break
+
+        while True:
+            cantidad = input("Ingrese la cantidad del producto a agregar (Escriba 'q' para cancelar): ")
+            if cantidad.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not cantidad.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                cantidad = int(cantidad)
+                break
+
+        # Llamar al procedimiento AgregarProductoACompra del paquete PKG_Compras
+        cursor = connection.cursor()
+        cursor.callproc("PKG_Compras.AgregarProductoACompra", [id_compra, id_producto, cantidad])
+        connection.commit()
+
+        print("Producto agregado a la compra exitosamente.")
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al agregar el producto a la compra:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+# Función para obtener el detalle de una compra
+def obtener_detalle_compra():
+    try:
+        mostrar_resumen_compras_por_estatus(0)
+
+        # Pedir al usuario el ID de la compra para obtener su detalle
+        while True:
+            id_compra = input("Ingrese el ID de la compra (Escriba 'q' para cancelar): ")
+            if id_compra.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_compra.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_compra = int(id_compra)
+                break
+
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Crear un cursor para llamar al procedimiento ObtenerDetalleCompra del paquete PKG_Compras
+        cursor = connection.cursor()
+
+        # Habilitar el modo "serveroutput"
+        cursor.callproc("dbms_output.enable")
+
+        # Llamar al procedimiento ObtenerDetalleCompra del paquete PKG_Compras
+        cursor.callproc("PKG_Compras.ObtenerDetalleCompra", [id_compra])
+        print("\n")
+
+        # Obtener los mensajes de salida del procedimiento y mostrarlos
+        status_var = cursor.var(cx_Oracle.NUMBER)
+        line_var = cursor.var(str)
+        while True:
+            cursor.callproc("dbms_output.get_line", (line_var, status_var))
+            if status_var.getvalue() != 0:
+                break
+            print(line_var.getvalue())
+        print("\n")
+        # Cerrar el cursor y confirmar la transacción
+        cursor.close()
+        connection.commit()
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al obtener el detalle de la compra:", e)
+    finally:
+        # Cerrar la conexión
+        connection.close()
+
+# Función para obtener el total de compras por usuario
+def obtener_total_compras_usuario():
+    try:
+        # Pedir al usuario el ID del usuario para obtener el total de compras
+        while True:
+            id_usuario_input = input("Ingrese el ID del usuario (Escriba 'q' para cancelar): ")
+            if id_usuario_input.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_usuario_input.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_usuario = int(id_usuario_input)
+                break
+
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Obtener los datos del cliente
+        cursor = connection.cursor()
+        cursor.execute("SELECT nombre, primapellido, segapellido, correo FROM Usuario WHERE idUsuario = :id_usuario", id_usuario=id_usuario)
+        datos_cliente = cursor.fetchone()
+        
+        if datos_cliente is None:
+            print(f"No se encontró un cliente con el ID {id_usuario}.")
+            return
+
+        nombre_cliente = f"{datos_cliente[0]} {datos_cliente[1]} {datos_cliente[2]}"
+        correo_cliente = datos_cliente[3]
+
+        # Llamar a la función ObtenerTotalComprasUsuario del paquete PKG_Compras
+        total_compras = cursor.callfunc("PKG_Compras.ObtenerTotalComprasUsuario", cx_Oracle.NUMBER, [id_usuario])
+        connection.commit()
+
+        print(f"Datos del cliente con ID {id_usuario}:")
+        print(f"Nombre: {nombre_cliente}")
+        print(f"Correo: {correo_cliente}")
+        print(f"El total de compras del cliente son: {total_compras}")
+        print("\n")
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al obtener los datos del cliente y el total de compras:", e)
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+def eliminar_producto_de_compra():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        while True:
+            # Pedir al usuario los datos para eliminar un producto de una compra
+            id_compra_input = input("Ingrese el ID de la compra existente (Escriba 'q' para cancelar): ")
+            if id_compra_input.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_compra_input.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_compra = int(id_compra_input)
+                break
+
+        while True:
+            id_producto_input = input("Ingrese el ID del producto a eliminar (Escriba 'q' para cancelar): ")
+            if id_producto_input.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_producto_input.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_producto = int(id_producto_input)
+                break
+
+        # Llamar al procedimiento EliminarProductoDeCompra del paquete PKG_Compras
+        cursor = connection.cursor()
+        cursor.callproc("PKG_Compras.EliminarProductoDeCompra", [id_compra, id_producto])
+        connection.commit()
+
+        print("Producto eliminado de la compra exitosamente.")
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al eliminar el producto de la compra:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+def obtener_total_productos_compra():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        while True:
+            # Pedir al usuario el ID de la compra para obtener el total de productos
+            id_compra_input = input("Ingrese el ID de la compra (Escriba 'q' para cancelar): ")
+            if id_compra_input.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_compra_input.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_compra = int(id_compra_input)
+                break
+
+        # Llamar a la función ObtenerTotalProductosCompra del paquete PKG_Compras
+        cursor = connection.cursor()
+        total_productos = cursor.callfunc("PKG_Compras.ObtenerTotalProductosCompra", cx_Oracle.NUMBER, [id_compra])
+        connection.commit()
+
+        print(f"El total de productos en la compra con ID {id_compra} son: {total_productos}")
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al obtener el total de productos en la compra:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+def mostrar_posibles_estatus():
+    print("Posibles estatus:")
+    print("0 = pendiente")
+    print("1 = en proceso")
+    print("2 = revisión")
+    print("3 = entregado")
+    print("4 = cancelado")
+
+def actualizar_estatus_compra():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Mostrar el resumen de compras
+        mostrar_resumen_compras()
+
+        while True:
+            # Pedir al usuario el ID de la compra para actualizar el estatus
+            id_compra_input = input("Ingrese el ID de la compra (Escriba 'q' para cancelar): ")
+            if id_compra_input.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_compra_input.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_compra = int(id_compra_input)
+                break
+
+        # Mostrar los posibles estatus
+        mostrar_posibles_estatus()
+
+        while True:
+            # Pedir al usuario el nuevo estatus
+            nuevo_estatus_input = input("Ingrese el nuevo estatus de la compra (0-3): ")
+            if nuevo_estatus_input.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not nuevo_estatus_input.isdigit() or int(nuevo_estatus_input) < 0 or int(nuevo_estatus_input) > 3:
+                print("Error: Ingrese un valor numérico válido entre 0 y 3.")
+            else:
+                nuevo_estatus = int(nuevo_estatus_input)
+                break
+
+        # Llamar al procedimiento ActualizarEstatusCompra del paquete PKG_Compras
+        cursor = connection.cursor()
+        cursor.callproc("PKG_Compras.ActualizarEstatusCompra", [id_compra, nuevo_estatus])
+        connection.commit()
+
+        print(f"Estatus de la compra con ID {id_compra} actualizado correctamente.")
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al actualizar el estatus de la compra:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+def cancelar_compra():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Mostrar el resumen de compras
+        mostrar_resumen_compras()
+
+        while True:
+            # Pedir al usuario el ID de la compra que desea cancelar
+            id_compra_input = input("Ingrese el ID de la compra a cancelar (Escriba 'q' para cancelar): ")
+            if id_compra_input.lower() == 'q':
+                print("Operación cancelada.")
+                return menu_compras()
+            elif not id_compra_input.isdigit():
+                print("Error: Ingrese un valor numérico válido.")
+            else:
+                id_compra = int(id_compra_input)
+                break
+
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Llamar al procedimiento CancelarCompra del paquete PKG_Compras
+        cursor = connection.cursor()
+        cursor.callproc("PKG_Compras.CancelarCompra", [id_compra])
+        connection.commit()
+
+        print(f"Compra con ID {id_compra} cancelada correctamente.")
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al cancelar la compra:", e)
+        
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+def consultar_compras_por_estatus():
+    try:
+        # Mostrar los posibles estatus
+        mostrar_posibles_estatus()
+
+        while True:
+            # Pedir al usuario el estatus de las compras que desea consultar
+            estatus_input = input("Ingrese el estatus de las compras (0-4) que desea consultar (Escriba 'q' para cancelar): ")
+            if estatus_input.lower() == 'q':
+                print("Operación cancelada.")
+                return
+            elif not estatus_input.isdigit() or int(estatus_input) not in [0, 1, 2, 3, 4]:
+                print("Error: Ingrese un valor numérico válido entre 0 y 4.")
+            else:
+                estatus = int(estatus_input)
+                break
+
+        # Mostrar el resumen de compras por el estatus proporcionado
+        mostrar_resumen_compras_por_estatus(estatus)
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al consultar las compras por estatus:", e)
+
+# Función para mostrar el menú de compras
 
 #----------------------------MENUS--------------------------------
 def menu_roles():
     op=""
-    while op!="":
+    while op!="0":
         print(
             "********** MENU DE ROLES**********\n"
             "1. CREAR ROL\n"
@@ -1507,10 +2047,30 @@ def menu_roles():
             EditarRol()
         elif op=="5":
             EliminarRol()
-    
 
 def menu_usuarios():
-    print("EN DESARRROLLO")
+    op=""
+    while op!="0":
+        print(
+            "********** MENU DE USUARIOS**********\n"
+            "1. CREAR USUARIO\n"
+            "2. VER USUARIOS\n"
+            "3. VER USUARIO ESPECIFICO\n"
+            "4. EDITAR USUARIO\n"
+            "5. ELIMINAR USUARIO\n"
+            "0. SALIR\n"
+        )
+        op=input("Ingrese una opción: ")
+        if op=="1":
+            InsertUsuario()
+        elif op=="2":
+            VerUsuarios()
+        elif op=="3":
+            print("EN DESARROLLO")
+        elif op=="4":
+            ActualizarUsuario()
+        elif op=="5":
+            print("EN DESARROLLO")
 
 def menu_tipoServicios():
     op=""
@@ -1618,6 +2178,47 @@ def menu_productos():
         elif op=="6":
             verProductosPorTipo()
 
+def menu_compras():
+    op = ""
+    while op != "0":
+        print(
+            "********** MENÚ DE COMPRAS **********\n"
+            "1. Realizar Compra\n"
+            "2. Agregar Producto a Compra Existente\n"
+            "3. Eliminar Producto de Compra Existente\n"
+            "4. Actualizar Estatus de Compra Existente\n"
+            "5. Cancelar Compra Existente\n"
+            "6. Obtener Total de Productos en una Compra\n"
+            "7. Obtener Total de Compras por Usuario\n"
+            "8. Obtener Detalle de Compra Específica\n"
+            "9. Consultar compras por estatus\n"
+            "0. SALIR\n"
+            "************************************\n"
+        )
+        op = input("Ingrese una opción: ")
+        if op == "1":
+            realizar_compra()
+        elif op == "2":
+            agregar_producto_a_compra()
+        elif op == "3":
+            eliminar_producto_de_compra()
+        elif op == "4":
+            actualizar_estatus_compra()
+        elif op == "5":
+            cancelar_compra()
+        elif op == "6":
+            obtener_total_productos_compra()
+        elif op == "7":
+            obtener_total_compras_usuario()
+        elif op == "8":
+            obtener_detalle_compra()
+        elif op == "9":
+            consultar_compras_por_estatus()
+        elif op == "0":
+            print("Saliendo del menú de compras...")
+        else:
+            print("Opción no válida. Intente nuevamente.")
+
 def MENU_PRINCIPAL():
     op=""
     while op!="0":
@@ -1629,6 +2230,7 @@ def MENU_PRINCIPAL():
             "4. PRODUCTOS\n"
             "5. TIPO SERVICIO\n"
             "6. SERVICIOS\n"
+            "7. COMPRAS\n"
             "0. SALIR\n"
             "Ingrese una opción:"
         )
@@ -1645,6 +2247,8 @@ def MENU_PRINCIPAL():
             menu_tipoServicios()
         elif op=="6":
             menu_servicios()
+        elif op=="7":
+            menu_compras()
 
 #---------------------------MAIN----------------------------------
-# MENU_PRINCIPAL()
+MENU_PRINCIPAL()
