@@ -719,6 +719,36 @@ BEGIN
     END IF;
 END;
 
+CREATE OR REPLACE PROCEDURE SP_LeerTipoServicio(
+    p_idTipoServicio IN NUMBER
+)
+AS
+    v_contador NUMBER;
+    v_id NUMBER;
+    v_nombre VARCHAR(100);
+    v_descripcion VARCHAR(200);
+BEGIN
+    SELECT COUNT(*) INTO v_contador
+    FROM TipoServicio
+    WHERE idTipoServicio = p_idTipoServicio;
+
+    IF v_contador > 0 THEN
+        SELECT idTipoServicio, nombre, descripcion 
+        INTO v_id, v_nombre, v_descripcion
+        FROM TipoServicio
+        WHERE idTipoServicio = p_idTipoServicio; 
+        
+        DBMS_OUTPUT.PUT_LINE('--- Datos del tipo de servicio ---');
+        DBMS_OUTPUT.PUT_LINE('ID: '|| v_id);
+        DBMS_OUTPUT.PUT_LINE('Nombre: '|| v_nombre);
+        DBMS_OUTPUT.PUT_LINE('Descripción: '|| v_descripcion);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('No se encontró el tipo de servicio indicado.');
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al leer el tipo de servicio: ' || SQLERRM);
+END;
 
 
 -------------\---------\----------MODULO SERVICIO------\-----------\-------------\--
@@ -909,6 +939,50 @@ BEGIN
         DBMS_OUTPUT.PUT_LINE('Error: El tipo de servicio no existe.');
     END IF;
 END;
+
+CREATE OR REPLACE PROCEDURE SP_LeerServicio(
+    p_idServicio IN Servicio.idServicio%TYPE
+)
+AS
+    v_contador NUMBER;
+    v_idServicio Servicio.idServicio%TYPE;
+    v_nombre Servicio.nombre%TYPE;
+    v_descripcion Servicio.descripcion%TYPE;
+    v_cupos Servicio.cupos%TYPE;
+    v_estatus Servicio.estatus%TYPE;
+    v_fecha Servicio.fecha%TYPE;
+    v_idTipoServicio Servicio.idTipoServicio%TYPE;
+BEGIN
+    -- Configurar la salida de mensajes del servidor
+    DBMS_OUTPUT.ENABLE();
+
+    --VALIDAR QUE EXISTA UN SERVICIO CON EL MISMO ID
+    BEGIN
+        SELECT COUNT(*) INTO v_contador FROM Servicio WHERE idServicio = p_idServicio;
+    END;
+
+    IF v_contador > 0 THEN
+        SELECT idServicio, nombre, descripcion, cupos, estatus, fecha, idTipoServicio 
+        INTO v_idServicio, v_nombre, v_descripcion, v_cupos, v_estatus, v_fecha, v_idTipoServicio
+        FROM Servicio
+        WHERE idServicio = p_idServicio; 
+        
+        DBMS_OUTPUT.PUT_LINE('---Datos del servicio---');
+        DBMS_OUTPUT.PUT_LINE('ID del Servicio: ' || v_idServicio);
+        DBMS_OUTPUT.PUT_LINE('Nombre: ' || v_nombre);
+        DBMS_OUTPUT.PUT_LINE('Descripción: ' || v_descripcion);
+        DBMS_OUTPUT.PUT_LINE('Cupos: ' || v_cupos);
+        DBMS_OUTPUT.PUT_LINE('Estatus: ' || v_estatus);
+        DBMS_OUTPUT.PUT_LINE('Fecha: ' || v_fecha);
+        DBMS_OUTPUT.PUT_LINE('ID del Tipo de Servicio: ' || v_idTipoServicio);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('No se encontró el servicio indicado.');
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al leer el servicio: ' || SQLERRM);
+END;
+
 
 ----\---------\-----------\-------MODULO Resenna-------\------\--------------\-----
 

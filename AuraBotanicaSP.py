@@ -762,21 +762,21 @@ def InsertTipoServicio():
 def vistaTipoServicio():
     try:
         # Establecer la conexión a la base de datos
-        con=establecer_conexion()
+        con = establecer_conexion()
         if con is None:
             print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
         else:
-            cur=con.cursor()
+            cur = con.cursor()
             cur.callproc("DBMS_OUTPUT.ENABLE")
             cur.execute("SELECT * FROM V_TiposServicio")
             
             # Recuperar los mensajes de salida
             results = cur.fetchall()
             if results:
-                print("---Tipos de Servicios Registrados---")
-                print("ID","\tNombre","\tDescripcion")
+                print("--- Tipos de Servicios Registrados ---")
+                print("{:<5} {:<20} {:<30}".format("ID", "Nombre", "Descripción"))
                 for row in results:
-                    print(row[0],"\t",row[1],"\t",row[2])
+                    print("{:<5} {:<20} {:<30}".format(row[0], row[1], row[2]))
             else:
                 print("No hay registros")
 
@@ -787,20 +787,48 @@ def vistaTipoServicio():
             con.close()
 # vistaTipoServicio()
 
-def verTipoProductoEspecifico():
-    # op=0
-    # nombre=""
-    # id=0
-    # while op!=1 and op!=2:
-    #     input("Ingrese 1 para buscar por ID o 2 para buscar por nombre: ")
-    
-    # if op==1:
-    #     id=input("Ingrese el ID del tipo de producto: ")
-    # else:
-    #     nombre=input("Ingrese el nombre del tipo de producto: ")
-    
-    # try:
-    print("EN DESARRROLLO")
+def verTipoServicioEspecifico():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+        
+        # Crear un cursor
+        cursor = connection.cursor()
+
+        # Solicitar el ID del tipo de servicio a leer
+        while True:
+            id_tipo_servicio_input = input("\nIngrese el ID del tipo de servicio que desea leer (o 'q' para salir): ")
+            
+            if id_tipo_servicio_input.lower() == 'q':
+                print("Saliendo...")
+                return
+                
+            if not id_tipo_servicio_input.isdigit():
+                print("Entrada inválida. Ingrese un número de ID válido o 'q' para salir.")
+                continue
+                
+            id_tipo_servicio = int(id_tipo_servicio_input)
+            break
+
+        # Configurar la salida de mensajes del servidor
+        cursor.callproc("DBMS_OUTPUT.ENABLE")
+
+        # Llamada al procedimiento almacenado para leer el tipo de servicio
+        cursor.callproc("SP_LeerTipoServicio", [id_tipo_servicio])
+
+        # Recuperar los mensajes de DBMS_OUTPUT
+        message = cursor.var(cx_Oracle.STRING)
+        status = cursor.var(cx_Oracle.NUMBER)
+        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+        while status.getvalue() == 0:
+            print(message.getvalue())
+            cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+
+    except Exception as ex:
+        print("Error:", ex)
+    finally:
+        if connection:
+            connection.close()
 
 def editarTipoServicio():
     vistaTipoServicio()
@@ -961,11 +989,11 @@ def InsertServicio():
 def vistaServicios():
     try:
         # Establecer la conexión a la base de datos
-        con=establecer_conexion()
+        con = establecer_conexion()
         if con is None:
             print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
         else:
-            cur=con.cursor()
+            cur = con.cursor()
             cur.callproc("DBMS_OUTPUT.ENABLE")
             cur.execute("SELECT * FROM V_Servicios")
             
@@ -973,9 +1001,9 @@ def vistaServicios():
             results = cur.fetchall()
             if results:
                 print("---Servicios Registrados---")
-                print("ID","\tNombre","\tDescripcion","\tCupos","\tEstatus","\tFecha","\tTipoServicio")
+                print("{:<10} {:<30} {:<50} {:<10} {:<10} {:<15} {:<20}".format("ID", "Nombre", "Descripcion", "Cupos", "Estatus", "Fecha", "TipoServicio"))
                 for row in results:
-                    print(row[0],"\t",row[1],"\t",row[3],"\t",row[4],"\t",row[5],"\t",row[6],"\t",row[7])
+                    print("{:<10} {:<30} {:<50} {:<10} {:<10} {:<15} {:<20}".format(row[0], row[1], row[3], row[4], row[5], row[6].strftime('%d-%m-%Y'), row[7]))
             else:
                 print("No hay registros")
 
@@ -987,7 +1015,44 @@ def vistaServicios():
 # vistaServicios()
 
 def verServicioEspecifico():
-    print("EN DESARRROLLO")
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+        
+        # Crear un cursor
+        cursor = connection.cursor()
+
+        # Solicitar el ID del servicio a leer
+        while True:
+            id_servicio_input = input("\nIngrese el ID del servicio que desea leer (o 'q' para salir): ")
+            
+            if id_servicio_input.lower() == 'q':
+                print("Saliendo...")
+                return
+                
+            if not id_servicio_input.isdigit():
+                print("Entrada inválida. Ingrese un número de ID válido o 'q' para salir.")
+                continue
+                
+            id_servicio = int(id_servicio_input)
+            break
+
+        # Llamada al procedimiento almacenado para leer el servicio
+        cursor.callproc("SP_LeerServicio", [id_servicio])
+
+        # Recuperar los mensajes de DBMS_OUTPUT
+        message = cursor.var(cx_Oracle.STRING)
+        status = cursor.var(cx_Oracle.NUMBER)
+        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+        while status.getvalue() == 0:
+            print(message.getvalue())
+            cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+
+    except Exception as ex:
+        print("Error:", ex)
+    finally:
+        if connection:
+            connection.close()
 
 def editarServicio():
     vistaServicios()
@@ -1943,9 +2008,13 @@ def obtener_detalle_compra():
 # Función para obtener el total de compras por usuario
 def obtener_total_compras_usuario():
     try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+        VerUsuarios()
+        
         # Pedir al usuario el ID del usuario para obtener el total de compras
         while True:
-            id_usuario_input = input("Ingrese el ID del usuario (Escriba 'q' para cancelar): ")
+            id_usuario_input = input("\nIngrese el ID del usuario (Escriba 'q' para cancelar): ")
             if id_usuario_input.lower() == 'q':
                 print("Operación cancelada.")
                 return menu_compras()
@@ -1955,8 +2024,7 @@ def obtener_total_compras_usuario():
                 id_usuario = int(id_usuario_input)
                 break
 
-        # Establecer la conexión a la base de datos
-        connection = establecer_conexion()
+        
 
         # Obtener los datos del cliente
         cursor = connection.cursor()
@@ -1974,11 +2042,10 @@ def obtener_total_compras_usuario():
         total_compras = cursor.callfunc("PKG_Compras.ObtenerTotalComprasUsuario", cx_Oracle.NUMBER, [id_usuario])
         connection.commit()
 
-        print(f"Datos del cliente con ID {id_usuario}:")
+        print(f"\nDatos del cliente con ID {id_usuario}:")
         print(f"Nombre: {nombre_cliente}")
         print(f"Correo: {correo_cliente}")
         print(f"El total de compras del cliente son: {total_compras}")
-        print("\n")
     except ValueError:
         print("Error: Ingrese un valor numérico válido.")
     except cx_Oracle.DatabaseError as e:
@@ -2033,10 +2100,38 @@ def eliminar_producto_de_compra():
         cursor.close()
         connection.close()
 
+def compras():
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+
+        # Ejecutar la consulta para obtener el resumen de compras
+        cursor = connection.cursor()
+        cursor.execute("SELECT IDCOMPRA, NUMEROTRACKING, \"Cliente\", PRECIOTOTAL, ESTATUS FROM resumen_compras")
+
+        # Mostrar los resultados
+        print("\n--- Resumen de Compras ---")
+        for compra in cursor:
+            print(f"ID de Compra: {compra[0]}")
+            print(f"Número de Tracking: {compra[1]}")
+            print(f"Cliente: {compra[2]}")
+            print(f"Precio Total: {compra[3]}")
+            print(f"STATUS: {compra[4]}")
+            print("--------------------------")
+            print("")
+    finally:
+        # Cerrar el cursor y la conexión
+        cursor.close()
+        connection.close()
+
+
+
 def obtener_total_productos_compra():
     try:
         # Establecer la conexión a la base de datos
         connection = establecer_conexion()
+
+        compras()
 
         while True:
             # Pedir al usuario el ID de la compra para obtener el total de productos
@@ -2063,9 +2158,10 @@ def obtener_total_productos_compra():
         print("Error al obtener el total de productos en la compra:", e)
         
     finally:
-        # Cerrar el cursor y la conexión
-        cursor.close()
-        connection.close()
+        if connection:
+            # Cerrar el cursor y la conexión
+            cursor.close()
+            connection.close()
 
 def mostrar_posibles_estatus():
     print("Posibles estatus:")
@@ -2192,8 +2288,6 @@ def consultar_compras_por_estatus():
     except cx_Oracle.DatabaseError as e:
         print("Error al consultar las compras por estatus:", e)
 
-# Función para mostrar el menú de compras
-
 #----------------------------MENUS--------------------------------
 def menu_roles():
     op=""
@@ -2261,7 +2355,7 @@ def menu_tipoServicios():
             "\n********** MENU DE TIPO SERVICIOS**********\n"
             "1. CREAR TIPO SERVICIO\n"
             "2. VER TIPO SERVICIO\n"
-            "3. VER TIPO SERVICIO ESPECIFICO\n"
+            "3. VER TIPO SERVICIO ESPECIFICOS\n"
             "4. EDITAR TIPO SERVICIO\n"
             "5. ELIMINAR TIPO SERVICIO\n"
             "0. SALIR\n"
@@ -2273,11 +2367,16 @@ def menu_tipoServicios():
         elif op=="2":
             vistaTipoServicio()
         elif op=="3":
-            verTipoProductoEspecifico()
+            verTipoServicioEspecifico()
         elif op=="4":
-            editarTipoProducto()
+            editarTipoServicio()
         elif op=="5":
-            eliminarTipoProducto()
+            eliminarTipoServicio()
+        elif op=="0":
+            print("\nSaliendo del menú de tipo servicios...\n")
+            MENU_PRINCIPAL()
+        else:
+            print("\nOpción no válida. Intente nuevamente.\n")
 
 def menu_servicios():
     op=""
@@ -2306,7 +2405,11 @@ def menu_servicios():
             eliminarServicio()
         elif op=="6":
             verServiciosPorTipo()
-        
+        elif op=="0":
+            print("\nSaliendo del menú de servicios...\n")
+            MENU_PRINCIPAL()
+        else:
+            print("\nOpción no válida. Intente nuevamente.\n")
 
 def menu_tipoProductos():
     op=""
@@ -2375,15 +2478,15 @@ def menu_compras():
     while op != "0":
         print(
             "\n********** MENÚ DE COMPRAS **********\n"
-            "1. Realizar Compra\n"
-            "2. Agregar Producto a Compra Existente\n"
-            "3. Eliminar Producto de Compra Existente\n"
-            "4. Actualizar Estatus de Compra Existente\n"
-            "5. Cancelar Compra Existente\n"
-            "6. Obtener Total de Productos en una Compra\n"
-            "7. Obtener Total de Compras por Usuario\n"
-            "8. Obtener Detalle de Compra Específica\n"
-            "9. Consultar compras por estatus\n"
+            "1. REALIZAR COMPRA\n"
+            "2. AGREGAR PRODUCTO A COMPRA EXISTENTE\n"
+            "3. ELIMINAR PRODUCTO DE COMPRA EXISTENTE\n"
+            "4. ACTUALIZAR STATUS DE COMPRA EXISTENTE\n"
+            "5. CANCELAR COMPRA EXISTENTE\n"
+            "6. OBTENER TOTAL DE PRODUCTOS EN UNA COMPRA\n"
+            "7. OTBENER TOTAL DE COMPRAS POR USUARIO\n"
+            "8. OBTENER DETALLE DE COMPRA ESPECIFICA\n"
+            "9. CONSULTAR COMPRAS POR STATUS\n"
             "0. SALIR\n"
             "************************************\n"
         )
