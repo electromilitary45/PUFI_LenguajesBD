@@ -1,4 +1,5 @@
 import cx_Oracle
+import sys
 
 ##RUTA DEREK
 cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
@@ -94,7 +95,6 @@ def InsertRol():
     finally:
         if connection:
             connection.close()
-            print("Rol insertado con éxito")
 
 def VerRoles():
     try:
@@ -116,15 +116,16 @@ def VerRoles():
         print(ex)
 
 def EditarRol():
+    connection = None
     try:
         # Traer y mostrar los datos de los roles
         roles = VerRoles()
 
-        # Pedir al usuario seleccionar un número de rol para editar o 'S' para cancelar
-        op = input("\nSeleccione el # de rol que desea editar o 'S' para cancelar: ")
+        # Pedir al usuario seleccionar un número de rol para editar o 'Q' para cancelar
+        op = input("\nSeleccione el # de rol que desea editar o 'Q' para cancelar: ")
 
         # Si no cancela la operación
-        if op != "S":
+        if op.lower() != "q":
             # Buscar el rol por ID
             idRol = int(op)
             encontrado = False
@@ -170,12 +171,13 @@ def EditarRol():
         # Si cancela la operación
         else:
             print("Operación cancelada")
+            menu_roles()
 
     except Exception as ex:
         print(ex)
 
     finally:
-        if connection:
+        if connection is not None:
             connection.close()
 
 def EliminarRol():
@@ -183,11 +185,11 @@ def EliminarRol():
         # Traer y mostrar los datos de los roles
         roles = VerRoles()
 
-        # Pedir al usuario seleccionar un número de rol para eliminar o 'S' para cancelar
-        op = input("\nSeleccione el # de rol que desea eliminar o 'S' para cancelar: ")
+        # Pedir al usuario seleccionar un número de rol para eliminar o 'Q' para cancelar
+        op = input("\nSeleccione el # de rol que desea eliminar o 'Q' para cancelar: ")
 
         # Si no cancela la operación
-        if op != "S":
+        if op.lower() != "q":
             # Buscar el rol por ID
             idRol = int(op)
             encontrado = False
@@ -228,6 +230,7 @@ def EliminarRol():
         # Si cancela la operación
         else:
             print("Operación cancelada")
+            menu_roles()
 
     except Exception as ex:
         print(ex)
@@ -274,7 +277,55 @@ def menu_editar_roles():
         EditarRol(id_rol_a_editar, nuevo_nombre)
 
 def verRolEspecifico():
-    print("EN DESARRROLLO")
+    connection = None
+    try:
+        while True:
+            # Pedir al usuario el ID del rol
+            id_rol_input = input("Ingrese el ID del rol (o 'q' para volver al menu): ")
+            
+            if id_rol_input.lower() == 'q':
+                menu_roles()
+                
+            
+            if not id_rol_input:
+                print("Error: El ID del rol no puede estar vacío.")
+                continue
+
+            id_rol = int(id_rol_input)
+
+            # Establecer la conexión a la base de datos
+            connection = establecer_conexion()
+
+            # Crear un cursor para llamar al procedimiento SP_LeerRol
+            cursor = connection.cursor()
+
+            # Habilitar el modo "serveroutput"
+            cursor.callproc("dbms_output.enable")
+
+            # Llamar al procedimiento SP_LeerRol
+            cursor.callproc("SP_LeerRol", [id_rol])
+
+            # Obtener los mensajes de salida del procedimiento y mostrarlos
+            status_var = cursor.var(cx_Oracle.NUMBER)
+            line_var = cursor.var(str)
+            while True:
+                cursor.callproc("dbms_output.get_line", (line_var, status_var))
+                if status_var.getvalue() != 0:
+                    break
+                print(line_var.getvalue())
+
+            # Cerrar el cursor y confirmar la transacción
+            cursor.close()
+            connection.commit()
+
+    except ValueError:
+        print("Error: Ingrese un valor numérico válido.")
+    except cx_Oracle.DatabaseError as e:
+        print("Error al obtener el rol:", e)
+    finally:
+        # Cerrar la conexión si está definida
+        if connection is not None:
+            connection.close()
 
 #--------------------MODULO USUARIOS--------------------#
 def EncUsuarioID(idUsuario):
@@ -363,7 +414,7 @@ def InsertUsuario():
             for u in usuarios:
                 u = str(u) + "\n"
 
-            idRol = input("Ingrese su rol: \n" + u + "\n")
+            idRol = input("Ingrese su rol: \n")
 
             for i in usuarios:
                 if str(i[0]) == idRol:
@@ -389,7 +440,7 @@ def InsertUsuario():
                 cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
 
             cursor.execute("commit")
-            print("Usuario creado con éxito")
+
 
         except Exception as ex:
             print(ex)
@@ -417,7 +468,7 @@ def VerUsuarioEspecifico():
                    "\n4. Apellido2"
                    "\n5. Cedula"
                    "\n6. Correo"
-                   "\n7. Salir"
+                   "\n7. Salir\nOpción: "
                    )
 
         if op == "1":
@@ -432,44 +483,54 @@ def VerUsuarioEspecifico():
             Cedula = input("Ingrese la cedula del usuario: ")
         elif op == "6":
             Correo = input("Ingrese el correo del usuario: ")
+        elif op == "7":
+            print("Saliendo...")
+            menu_usuarios()
 
-    try:
-        connection = establecer_conexion()
-        cursor = connection.cursor()
+        try:
+            connection = establecer_conexion()
+            cursor = connection.cursor()
 
-        # SELECT para buscar el usuario según el atributo proporcionado
-        query = "SELECT idUsuario, nombre, primApellido, segApellido, cedula, correo FROM usuario WHERE"
+            # SELECT para buscar el usuario según el atributo proporcionado
+            query = "SELECT idUsuario, nombre, primApellido, segApellido, cedula, correo FROM usuario WHERE "
 
-        if op == "1":
-            query += " idUsuario = :idUsuario"
-        elif op == "2":
-            query += " nombre = :nombreUsuario"
-        elif op == "3":
-            query += " primApellido = :apellido1"
-        elif op == "4":
-            query += " segApellido = :apellido2"
-        elif op == "5":
-            query += " cedula = :cedulaUsuario"
-        elif op == "6":
-            query += " correo = :correoUsuario"
-        else:
-            return
+            bind_variables = {}  # Diccionario para mantener las variables vinculadas
 
-        # Ejecutar la consulta SQL con los parámetros correspondientes
-        cursor.execute(query, idUsuario=id, nombreUsuario=nombre, apellido1=Apellido1,
-                       apellido2=Apellido2, cedulaUsuario=Cedula, correoUsuario=Correo)
+            if op == "1":
+                query += "idUsuario = :idUsuario"
+                bind_variables['idUsuario'] = id
+            elif op == "2":
+                query += "nombre = :nombreUsuario"
+                bind_variables['nombreUsuario'] = nombre
+            elif op == "3":
+                query += "primApellido = :apellido1"
+                bind_variables['apellido1'] = Apellido1
+            elif op == "4":
+                query += "segApellido = :apellido2"
+                bind_variables['apellido2'] = Apellido2
+            elif op == "5":
+                query += "cedula = :cedulaUsuario"
+                bind_variables['cedulaUsuario'] = Cedula
+            elif op == "6":
+                query += "correo = :correoUsuario"
+                bind_variables['correoUsuario'] = Correo
+            else:
+                return
 
-        results = cursor.fetchall()
+            # Ejecutar la consulta SQL con los parámetros correspondientes
+            cursor.execute(query, bind_variables)
 
-        for row in results:
-            print(row)
+            results = cursor.fetchall()
 
-    except Exception as ex:
-        print(ex)
+            for row in results:
+                print(row)
 
-    finally:
-        if connection:
-            connection.close()
+        except Exception as ex:
+            print(ex)
+
+        finally:
+            if connection:
+                connection.close()
 
 def ActualizarUsuario():
     print("********USUARIOS*********")
@@ -580,6 +641,44 @@ def VerUsuariosRol(idRol):
         if connection:
             connection.close()
     return usuarios
+
+def eliminar_usuario():
+    try:
+        #Establecer conexion
+        connection = establecer_conexion()
+        VerUsuarios()
+
+        
+        # Crear un cursor
+        cursor = connection.cursor()
+
+        # Solicitar el ID del usuario a eliminar
+        while True:
+            id_usuario_input = input("\nIngrese el ID del usuario que desea eliminar (o 'q' para salir): ")
+            
+            if id_usuario_input.lower() == 'q':
+                print("\nSaliendo...")
+                return
+                
+            if not id_usuario_input.isdigit():
+                print("Entrada inválida. Ingrese un número de ID válido o 'q' para salir.")
+                continue
+                
+            id_usuario = int(id_usuario_input)
+            break
+
+        # Llamada al procedimiento almacenado para eliminar el usuario
+        cursor.callproc("SP_EliminarUsuario", [id_usuario])
+
+        # Realizar commit en la transacción
+        connection.commit()
+        print("\nUsuario eliminado exitosamente.")
+
+    except Exception as ex:
+        print("Error:", ex)
+    finally:
+        if connection:
+            connection.close()
 
 #---------------------MODULO TIPO SERVICIOS---------------------
 def tipoServicioDatos():
@@ -1509,13 +1608,13 @@ def mostrar_productos_disponibles():
         for row in rows:
             print(f"ID: {row[0]}, Nombre: {row[1]}, Descripción: {row[2]}, Precio: {row[3]}")
         print("-------------------------------------")
-
+        cursor.close()
     except cx_Oracle.DatabaseError as e:
         print("Error al obtener los datos de la vista Vista_LeerProductos:", e)
     finally:
-        # Cerrar el cursor y la conexión
-        cursor.close()
-        connection.close()
+        if connection:
+            # Cerrar la conexión
+            connection.close()
 
 def mostrar_resumen_compras():
     try:
@@ -1541,9 +1640,10 @@ def mostrar_resumen_compras():
         print("Error al mostrar el resumen de compras:", e)
         
     finally:
-        # Cerrar el cursor y la conexión
-        cursor.close()
-        connection.close()
+        if connection:
+            # Cerrar el cursor y la conexión
+            cursor.close()
+            connection.close()
 
 def mostrar_resumen_compras_por_estatus(estatus):
     try:
@@ -1569,9 +1669,10 @@ def mostrar_resumen_compras_por_estatus(estatus):
         print("Error al mostrar el resumen de compras:", e)
         
     finally:
-        # Cerrar el cursor y la conexión
-        cursor.close()
-        connection.close()
+        if connection:
+            # Cerrar el cursor y la conexión
+            cursor.close()
+            connection.close()
 
 # Función para realizar una compra
 def realizar_compra():
@@ -1640,6 +1741,7 @@ def realizar_compra():
         # Llamar al procedimiento RealizarCompra del paquete PKG_Compras
         cursor = connection.cursor()
         cursor.callproc("PKG_Compras.RealizarCompra", [id_usuario, productos_array, cantidades_array])
+        cursor.close()
         connection.commit()
 
         print("¡Compra realizada con éxito!")
@@ -1650,9 +1752,9 @@ def realizar_compra():
         print("Error al realizar la compra:", e)
         
     finally:
-        # Cerrar el cursor y la conexión
-        cursor.close()
-        connection.close()
+        if connection:
+            # Cerrar la conexión
+            connection.close()
 
 # Procedimiento para agregar un producto a una compra existente
 def agregar_producto_a_compra():
@@ -1703,6 +1805,7 @@ def agregar_producto_a_compra():
         # Llamar al procedimiento AgregarProductoACompra del paquete PKG_Compras
         cursor = connection.cursor()
         cursor.callproc("PKG_Compras.AgregarProductoACompra", [id_compra, id_producto, cantidad])
+        cursor.close()
         connection.commit()
 
         print("Producto agregado a la compra exitosamente.")
@@ -1713,9 +1816,9 @@ def agregar_producto_a_compra():
         print("Error al agregar el producto a la compra:", e)
         
     finally:
-        # Cerrar el cursor y la conexión
-        cursor.close()
-        connection.close()
+        if connection:
+            # Cerrar la conexión
+            connection.close()
 
 # Función para obtener el detalle de una compra
 def obtener_detalle_compra():
@@ -1765,8 +1868,9 @@ def obtener_detalle_compra():
     except cx_Oracle.DatabaseError as e:
         print("Error al obtener el detalle de la compra:", e)
     finally:
-        # Cerrar la conexión
-        connection.close()
+        if connection:
+            # Cerrar la conexión
+            connection.close()
 
 # Función para obtener el total de compras por usuario
 def obtener_total_compras_usuario():
@@ -2027,7 +2131,7 @@ def menu_roles():
     op=""
     while op!="0":
         print(
-            "********** MENU DE ROLES**********\n"
+            "\n********** MENU DE ROLES**********\n"
             "1. CREAR ROL\n"
             "2. VER ROLES\n"
             "3. VER ROL ESPECIFICO\n"
@@ -2047,12 +2151,17 @@ def menu_roles():
             EditarRol()
         elif op=="5":
             EliminarRol()
+        elif op=="0":
+            print("\nSaliendo del menú de roles...\n")
+            MENU_PRINCIPAL()
+        else:
+            print("\nOpción no válida. Intente nuevamente.\n")
 
 def menu_usuarios():
     op=""
     while op!="0":
         print(
-            "********** MENU DE USUARIOS**********\n"
+            "\n********** MENU DE USUARIOS**********\n"
             "1. CREAR USUARIO\n"
             "2. VER USUARIOS\n"
             "3. VER USUARIO ESPECIFICO\n"
@@ -2066,17 +2175,22 @@ def menu_usuarios():
         elif op=="2":
             VerUsuarios()
         elif op=="3":
-            print("EN DESARROLLO")
+            VerUsuarioEspecifico()
         elif op=="4":
             ActualizarUsuario()
         elif op=="5":
-            print("EN DESARROLLO")
+            eliminar_usuario()
+        elif op=="0":
+            print("\nSaliendo del menú de usuarios...\n")
+            MENU_PRINCIPAL()
+        else:
+            print("\nOpción no válida. Intente nuevamente.\n")
 
 def menu_tipoServicios():
     op=""
     while op!="0":
         print(
-            "********** MENU DE TIPO PRODUCTO**********\n"
+            "\n********** MENU DE TIPO PRODUCTO**********\n"
             "1. CREAR TIPO SERVICIO\n"
             "2. VER TIPO SERVICIO\n"
             "3. VER TIPO SERVICIO ESPECIFICO\n"
@@ -2101,7 +2215,7 @@ def menu_servicios():
     op=""
     while op!="0":
         print(
-                "***************** MENU DE SERVICIOS *****************\n"
+                "\n***************** MENU DE SERVICIOS *****************\n"
                 "1. CREAR SERVICIO\n"
                 "2. VER SERVICIOS\n"
                 "3. VER SERVICIO ESPECIFICO\n"
@@ -2124,12 +2238,13 @@ def menu_servicios():
             eliminarServicio()
         elif op=="6":
             verServiciosPorTipo()
+        
 
 def menu_tipoProductos():
     op=""
     while op!="0":
         print(
-            "********** MENU DE TIPO PRODUCTO**********\n"
+            "\n********** MENU DE TIPO PRODUCTO**********\n"
             "1. CREAR TIPO producto\n"
             "2. VER TIPO producto\n"
             "3. VER TIPO producto ESPECIFICO\n"
@@ -2149,12 +2264,17 @@ def menu_tipoProductos():
             editarTipoProducto()
         elif op=="5":
             eliminarTipoProducto()
+        elif op=="0":
+            print("\nSaliendo del menú de tipo producto...\n")
+            MENU_PRINCIPAL()
+        else:
+            print("\nOpción no válida. Intente nuevamente.\n")
 
 def menu_productos():
     op=""
     while op!="0":
         print(
-                "***************** MENU DE PRODUCTOS *****************\n"
+                "\n***************** MENU DE PRODUCTOS *****************\n"
                 "1. CREAR PRODUCTOS\n"
                 "2. VER PRODUCTOS\n"
                 "3. VER PRODUCTO ESPECIFICO\n"
@@ -2177,12 +2297,17 @@ def menu_productos():
             eliminarProductos()
         elif op=="6":
             verProductosPorTipo()
+        elif op=="0":
+            print("\nSaliendo del menú de productos...\n")
+            MENU_PRINCIPAL()
+        else:
+            print("\nOpción no válida. Intente nuevamente.\n")
 
 def menu_compras():
     op = ""
     while op != "0":
         print(
-            "********** MENÚ DE COMPRAS **********\n"
+            "\n********** MENÚ DE COMPRAS **********\n"
             "1. Realizar Compra\n"
             "2. Agregar Producto a Compra Existente\n"
             "3. Eliminar Producto de Compra Existente\n"
@@ -2195,7 +2320,7 @@ def menu_compras():
             "0. SALIR\n"
             "************************************\n"
         )
-        op = input("Ingrese una opción: ")
+        op = input("Ingrese una opción:")
         if op == "1":
             realizar_compra()
         elif op == "2":
@@ -2215,15 +2340,15 @@ def menu_compras():
         elif op == "9":
             consultar_compras_por_estatus()
         elif op == "0":
-            print("Saliendo del menú de compras...")
+            print("\nSaliendo del menú de compras...\n")
+            MENU_PRINCIPAL()
         else:
-            print("Opción no válida. Intente nuevamente.")
+            print("\nOpción no válida. Intente nuevamente.\n")
 
 def MENU_PRINCIPAL():
-    op=""
-    while op!="0":
-        op=input(
-            "********** MENU **********\n"
+    while True:
+        op = input(
+            "\n********** MENU **********\n"
             "1. ROLES\n"
             "2. USUARIOS\n"
             "3. TIPO PRODUCTO\n"
@@ -2232,23 +2357,27 @@ def MENU_PRINCIPAL():
             "6. SERVICIOS\n"
             "7. COMPRAS\n"
             "0. SALIR\n"
-            "Ingrese una opción:"
+            "\nIngrese una opción: "
         )
         
-        if op=="1":
+        if op == "1":
             menu_roles()
-        elif op=="2":
+        elif op == "2":
             menu_usuarios()
-        elif op=="3":
+        elif op == "3":
             menu_tipoProductos()
-        elif op=="4":
+        elif op == "4":
             menu_productos()
-        elif op=="5":
+        elif op == "5":
             menu_tipoServicios()
-        elif op=="6":
+        elif op == "6":
             menu_servicios()
-        elif op=="7":
+        elif op == "7":
             menu_compras()
-
+        elif op == "0":
+            print("\nGracias por usar el sistema.\n")
+            sys.exit()
+        else:
+            print("\nOpción no válida. Intente nuevamente.\n")
 #---------------------------MAIN----------------------------------
 MENU_PRINCIPAL()

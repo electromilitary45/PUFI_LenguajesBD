@@ -557,6 +557,39 @@ BEGIN
         SELECT * FROM usuario WHERE idUsuario = p_idUsuario;
 END;
 
+-------------------SP Eliminar Usuario------------------\
+CREATE OR REPLACE PROCEDURE SP_EliminarUsuario(
+    p_idUsuario IN NUMBER
+)
+AS
+    v_idDireccion NUMBER;
+BEGIN
+    -- Obtener el id de dirección del usuario a eliminar
+    SELECT idDireccion INTO v_idDireccion FROM Usuario WHERE idUsuario = p_idUsuario;
+
+    -- Eliminar la relación entre el usuario y los servicios
+    DELETE FROM ServicioUsuario WHERE idUsuario = p_idUsuario;
+
+    -- Eliminar las reseñas del usuario
+    DELETE FROM Resenna WHERE idUsuario = p_idUsuario;
+
+    -- Eliminar las compras del usuario
+    DELETE FROM Compra WHERE idUsuario = p_idUsuario;
+
+    -- Eliminar la dirección del usuario
+    DELETE FROM Direccion WHERE idDireccion = v_idDireccion;
+
+    -- Eliminar el usuario
+    DELETE FROM Usuario WHERE idUsuario = p_idUsuario;
+
+    COMMIT;
+    DBMS_OUTPUT.PUT_LINE('Usuario eliminado exitosamente.');
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        DBMS_OUTPUT.PUT_LINE('Error al eliminar el usuario: ' || SQLERRM);
+END;
+
 
 --------------------------------MODULO TIPO SERVICIO--------------------------------
 
