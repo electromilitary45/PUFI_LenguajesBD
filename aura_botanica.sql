@@ -1415,6 +1415,37 @@ BEGIN
     END IF;
 END;
 
+------------(TipoProducto) SP_LeerTipoProducto ------------------
+CREATE OR REPLACE PROCEDURE SP_LeerTipoProducto(
+    p_idTipoProducto IN NUMBER
+)
+AS
+    v_contador NUMBER;
+    v_id NUMBER;
+    v_nombre VARCHAR(100);
+    v_descripcion VARCHAR(200);
+BEGIN
+    SELECT COUNT(*) INTO v_contador
+    FROM V_Tiposproducto v
+    WHERE v.idTipoProducto = p_idTipoProducto;
+
+    IF v_contador > 0 THEN
+        SELECT idTipoProducto, nombre, descripcion 
+        INTO v_id, v_nombre, v_descripcion
+        FROM V_Tiposproducto
+        WHERE idTipoProducto = p_idTipoProducto; 
+        
+        DBMS_OUTPUT.PUT_LINE('---Datos del tipo de producto---');
+        DBMS_OUTPUT.PUT_LINE('ID: '|| v_id);
+        DBMS_OUTPUT.PUT_LINE('Nombre: '|| v_nombre);
+        DBMS_OUTPUT.PUT_LINE('Descripción: '|| v_descripcion);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('No se encontró el tipo de producto indicado.');
+    END IF;
+EXCEPTION
+    WHEN OTHERS THEN
+        DBMS_OUTPUT.PUT_LINE('Error al leer el tipo de producto: ' || SQLERRM);
+END;
 
 
 -------------\---------\----------MODULO PRODUCTO------\-----------\-------------\--
@@ -1580,7 +1611,7 @@ BEGIN
 
     BEGIN 
         --VALIDAR QUE NO EXISTAN PRODUCTOS ASOCIADOS A UN USUARIO
-        SELECT COUNT(*) INTO v_cantidadProductosCompra FROM Compra WHERE idProducto = p_idProducto;
+        SELECT COUNT(*) INTO v_cantidadProductosCompra FROM CompraProducto WHERE idProducto = p_idProducto;
     END;
 
     if v_idProductoComprobacion is not null THEN

@@ -2,7 +2,7 @@ import cx_Oracle
 import sys
 
 ##RUTA DEREK
-cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
+#cx_Oracle.init_oracle_client(lib_dir=r"g:\ORACLE\instantclient")
 
 def establecer_conexion():
     try:
@@ -1240,19 +1240,47 @@ def vistaTipoProducto():
 # vistaTipoProducto()
 
 def verTipoProductoEspecifico():
-    # op=0
-    # nombre=""
-    # id=0
-    # while op!=1 and op!=2:
-    #     input("Ingrese 1 para buscar por ID o 2 para buscar por nombre: ")
-    
-    # if op==1:
-    #     id=input("Ingrese el ID del tipo de producto: ")
-    # else:
-    #     nombre=input("Ingrese el nombre del tipo de producto: ")
-    
-    # try:
-    print("EN DESARRROLLO")
+    try:
+        # Establecer la conexión a la base de datos
+        connection = establecer_conexion()
+        
+        # Crear un cursor
+        cursor = connection.cursor()
+
+        # Habilitar DBMS_OUTPUT para capturar los mensajes del procedimiento
+        cursor.callproc("DBMS_OUTPUT.ENABLE")
+        
+        # Solicitar el ID del tipo de producto a leer
+        while True:
+            id_tipo_producto_input = input("\nIngrese el ID del tipo de producto que desea leer (o 'q' para salir): ")
+            
+            if id_tipo_producto_input.lower() == 'q':
+                print("Saliendo...")
+                return
+                
+            if not id_tipo_producto_input.isdigit():
+                print("Entrada inválida. Ingrese un número de ID válido o 'q' para salir.")
+                continue
+                
+            id_tipo_producto = int(id_tipo_producto_input)
+            break
+
+        # Llamada al procedimiento almacenado para leer el tipo de producto
+        cursor.callproc("SP_LeerTipoProducto", [id_tipo_producto])
+
+        # Recuperar los mensajes de DBMS_OUTPUT
+        message = cursor.var(cx_Oracle.STRING)
+        status = cursor.var(cx_Oracle.NUMBER)
+        cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+        while status.getvalue() == 0:
+            print(message.getvalue())
+            cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+
+    except Exception as ex:
+        print("Error:", ex)
+    finally:
+        if connection:
+            connection.close()
 
 def editarTipoProducto():
     vistaTipoProducto()
@@ -1411,11 +1439,11 @@ def InsertProducto():
 def vistaProductos():
     try:
         # Establecer la conexión a la base de datos
-        con=establecer_conexion()
+        con = establecer_conexion()
         if con is None:
             print("No se logró establecer la conexión con la base de datos en el proceso de inserción")
         else:
-            cur=con.cursor()
+            cur = con.cursor()
             cur.callproc("DBMS_OUTPUT.ENABLE")
             cur.execute("SELECT * FROM V_Productos")
             
@@ -1423,21 +1451,61 @@ def vistaProductos():
             results = cur.fetchall()
             if results:
                 print("---Productos Registrados---")
-                print("ID","\tNombre","\tDescripcion","\tStock","\tEstatus","\tTipoProducto")
+                print("{:<6} {:<20} {:<60} {:<10} {:<8} {:<20}".format("ID", "Nombre", "Descripción", "Stock", "Estatus", "TipoProducto"))
                 for row in results:
-                    print(row[0],"\t",row[1],"\t",row[2],"\t",row[3],"\t",row[4],"\t",row[5])
+                    print("{:<6} {:<20} {:<60} {:<10} {:<8} {:<20}".format(row[0], row[1], row[2], row[3], row[4], row[5]))
             else:
                 print("No hay registros")
-
+                
     except Exception as ex:
-        print(ex)
+        print("Error:", ex)
     finally:
         if con:
             con.close()
-# vistaProductos()
 
 def verProductoEspecifico():
-    print("EN DESARRROLLO")
+    try:
+        # Establecer la conexión a la base de datos
+        con = establecer_conexion()
+        
+        if con is None:
+            print("No se logró establecer la conexión con la base de datos.")
+        else:
+            cur = con.cursor()
+            
+            # Habilitar DBMS_OUTPUT para capturar los mensajes del procedimiento
+            cur.callproc("DBMS_OUTPUT.ENABLE")
+            
+            # Solicitar el ID del producto a ver
+            while True:
+                id_producto_input = input("\nIngrese el ID del producto que desea ver (o 'q' para salir): ")
+                
+                if id_producto_input.lower() == 'q':
+                    print("Saliendo...")
+                    return
+                    
+                if not id_producto_input.isdigit():
+                    print("Entrada inválida. Ingrese un número de ID válido o 'q' para salir.")
+                    continue
+                    
+                id_producto = int(id_producto_input)
+                break
+            
+            cur.callproc("SP_LeerProducto", [id_producto])  # Llamar al procedimiento almacenado
+            
+            # Recuperar los mensajes de salida
+            message = cur.var(cx_Oracle.STRING)
+            status = cur.var(cx_Oracle.NUMBER)
+            cur.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+            while status.getvalue() == 0:
+                print(message.getvalue())
+                cur.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
+                
+    except Exception as ex:
+        print("Error:", ex)
+    finally:
+        if con:
+            con.close()
 
 def editarProductos():
     vistaProductos()
@@ -1479,7 +1547,7 @@ def editarProductos():
             elif op=="2":
                 desc=input("Ingrese la nueva descripcion: (anterior: "+desc+")")
             elif op=="3":
-                stock=input("Ingrese el nuevo numero de cupos: (anterior: "+str(stock)+")")
+                stock=input("Ingrese el nuevo numero de stock del producto: (anterior: "+str(stock)+")")
             elif op=="4":
                 tipoEstatus=""
                 if estatus==1:
@@ -1487,11 +1555,11 @@ def editarProductos():
                 else:
                     tipoEstatus="Inactivo"
                     
-                estatus=input("Ingrese el nuevo estatus: (anterior: "+tipoEstatus+"\n)"
+                estatus=input("Ingrese el nuevo estatus: (anterior: "+tipoEstatus+")\n"
                             "1. Activo\n"
                             "0. Inactivo\n")
             elif op=="5":
-                precio=input("Ingrese la nueva fecha: (anterior: "+str(precio)+")")
+                precio=input("Ingrese el nuevo precio: (anterior: "+str(precio)+")")
                 
             elif op=="6":
                 vistaTipoProducto()
@@ -1556,7 +1624,7 @@ def verProductosPorTipo():
     vistaTipoProducto()
     idTipoProducto=""
     while idTipoProducto=="":
-        idTipoProducto=input("Ingrese el id del tipo de producto: ")
+        idTipoProducto=input("\nIngrese el id del tipo de producto: ")
     
     try:
         con=establecer_conexion()
@@ -1580,7 +1648,7 @@ def verProductosPorTipo():
     finally:
         if con:
             con.close()
-# verProductosPorTipo()
+
 
 ####################################################### Modulo Compras #######################################################
 
@@ -2190,7 +2258,7 @@ def menu_tipoServicios():
     op=""
     while op!="0":
         print(
-            "\n********** MENU DE TIPO PRODUCTO**********\n"
+            "\n********** MENU DE TIPO SERVICIOS**********\n"
             "1. CREAR TIPO SERVICIO\n"
             "2. VER TIPO SERVICIO\n"
             "3. VER TIPO SERVICIO ESPECIFICO\n"
@@ -2245,12 +2313,11 @@ def menu_tipoProductos():
     while op!="0":
         print(
             "\n********** MENU DE TIPO PRODUCTO**********\n"
-            "1. CREAR TIPO producto\n"
-            "2. VER TIPO producto\n"
-            "3. VER TIPO producto ESPECIFICO\n"
-            "4. EDITAR TIPO producto\n"
-            "5. ELIMINAR TIPO producto\n"
-            "0. SALIR\n"
+            "1. CREAR TIPO PRODUCTO\n"
+            "2. VER TIPO PRODUCTO\n"
+            "3. VER TIPO PRODUCTO ESPECIFICO\n"
+            "4. EDITAR TIPO PRODUCTO\n"
+            "5. ELIMINAR TIPO PRODUCTO\n"
         )
         op=input("Ingrese una opción: ")
         
