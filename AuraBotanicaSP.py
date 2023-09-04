@@ -239,42 +239,42 @@ def EliminarRol():
         if connection:
             connection.close()
 
-def solicitar_id_rol():
-    while True:
-        id_rol_a_editar = input("\nIngrese el ID del rol que desea editar (o 'q' para salir): ")
-        if id_rol_a_editar.lower() == 'q' or id_rol_a_editar.lower() == 'salir':
-            return None  # Devolver None para indicar que se desea salir
-        elif id_rol_a_editar.isdigit():
-            return int(id_rol_a_editar)
-        else:
-            print("Error: Por favor, ingrese un número válido.")
+# def solicitar_id_rol():
+#     while True:
+#         id_rol_a_editar = input("\nIngrese el ID del rol que desea editar (o 'q' para salir): ")
+#         if id_rol_a_editar.lower() == 'q' or id_rol_a_editar.lower() == 'salir':
+#             return None  # Devolver None para indicar que se desea salir
+#         elif id_rol_a_editar.isdigit():
+#             return int(id_rol_a_editar)
+#         else:
+#             print("Error: Por favor, ingrese un número válido.")
 
-def menu_editar_roles():
-    # Obtener los registros de la vista InfoRoles
-    idRol_array, nombre_array = VerRoles()
+# def menu_editar_roles():
+#     # Obtener los registros de la vista InfoRoles
+#     idRol_array, nombre_array = VerRoles()
 
-    print('\n**********************************************************')
-    print('*************** MODULO ROLES - EDITAR ROL ***************')
-    print('**********************************************************')
+#     print('\n**********************************************************')
+#     print('*************** MODULO ROLES - EDITAR ROL ***************')
+#     print('**********************************************************')
 
-    # Imprimir los registros disponibles
-    print("\nRegistros disponibles:\n")
-    for i in range(len(idRol_array)):
-        print("--ID Rol:", idRol_array[i], "- Nombre:", nombre_array[i])
+#     # Imprimir los registros disponibles
+#     print("\nRegistros disponibles:\n")
+#     for i in range(len(idRol_array)):
+#         print("--ID Rol:", idRol_array[i], "- Nombre:", nombre_array[i])
 
-    # Solicitar al usuario el ID del rol a editar
-    id_rol_a_editar = solicitar_id_rol()
-    if id_rol_a_editar is None:
-        # Salir del programa 
-        print("\nSaliendo del programa...")
-    else:
-        # Continuar con el procesamiento
-        print("\nID del rol a editar:", id_rol_a_editar)
+#     # Solicitar al usuario el ID del rol a editar
+#     id_rol_a_editar = solicitar_id_rol()
+#     if id_rol_a_editar is None:
+#         # Salir del programa 
+#         print("\nSaliendo del programa...")
+#     else:
+#         # Continuar con el procesamiento
+#         print("\nID del rol a editar:", id_rol_a_editar)
 
-    # Verificar si el ID del rol ingresado existe en los registros obtenidos
-    if id_rol_a_editar in idRol_array:
-        nuevo_nombre = input("\nIngrese el nuevo nombre para el rol: ")
-        EditarRol(id_rol_a_editar, nuevo_nombre)
+#     # Verificar si el ID del rol ingresado existe en los registros obtenidos
+#     if id_rol_a_editar in idRol_array:
+#         nuevo_nombre = input("\nIngrese el nuevo nombre para el rol: ")
+#         EditarRol(id_rol_a_editar, nuevo_nombre)
 
 def verRolEspecifico():
     connection = None
@@ -462,14 +462,14 @@ def VerUsuarioEspecifico():
 
     while op == "":
         op = input("Con cual dato quiere buscar el usuario:"
-                   "\n1. ID"
-                   "\n2. Nombre"
-                   "\n3. Apellido1"
-                   "\n4. Apellido2"
-                   "\n5. Cedula"
-                   "\n6. Correo"
-                   "\n7. Salir\nOpción: "
-                   )
+                "\n1. ID"
+                "\n2. Nombre"
+                "\n3. Apellido1"
+                "\n4. Apellido2"
+                "\n5. Cedula"
+                "\n6. Correo"
+                "\n7. Salir\nOpción: "
+                )
 
         if op == "1":
             id = input("Ingrese el id del usuario: ")
@@ -605,7 +605,7 @@ def ActualizarUsuario():
             message = cursor.var(cx_Oracle.STRING)
             status = cursor.var(cx_Oracle.NUMBER)
             cursor.callproc("SP_EditarUsr", [idUsuario, nombre, primApellido, segApellido, cedula, correo,
-                                             contrasenna, idRol, idDireccion])
+                                            contrasenna, idRol, idDireccion])
             cursor.execute('BEGIN DBMS_OUTPUT.GET_LINE(:message, :status); END;', (message, status))
             while status.getvalue() == 0:
                 print(message.getvalue())
@@ -2123,8 +2123,6 @@ def compras():
         # Cerrar el cursor y la conexión
         cursor.close()
         connection.close()
-
-
 
 def obtener_total_productos_compra():
     try:
